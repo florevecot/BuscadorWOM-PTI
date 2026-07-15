@@ -681,3 +681,7 @@ button:disabled {
         font-size: 24px;
     }
 }
+
+.punto-todos-pti {
+    background: #0077cc;
+}

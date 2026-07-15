@@ -1,37 +1,46 @@
-// Aplicación principal
+// ======================================================
+// BUSCADOR WOM-PTI
+// APLICACIÓN PRINCIPAL
+// ======================================================
 
 import {
-  cargarSitios,
-  cargarPti
+    cargarSitios,
+    cargarPti
 } from "./data.js";
 
 import {
-  crearCapaSitios,
-  marcarSitioSeleccionado,
-  dibujarCirculo,
-  volverAlSitio
+    crearCapaSitios,
+    crearCapaTodosPti,
+    marcarSitioSeleccionado,
+    dibujarCirculo,
+    volverAlSitio
 } from "./mapa.js";
 
 import {
-  elementos,
-  mostrarMensaje,
-  mostrarDetalleSitio,
-  mostrarCargaPti,
-  mostrarPtiCargados,
-  mostrarErrorPti
+    elementos,
+    mostrarMensaje,
+    mostrarDetalleSitio,
+    mostrarCargaPti,
+    mostrarPtiCargados,
+    mostrarErrorPti
 } from "./ui.js";
 
 import {
-  actualizarResultadosPti
+    actualizarResultadosPti
 } from "./pti.js";
 
 import {
-  configurarAutocompletado
+    configurarAutocompletado
 } from "./buscador.js";
 
 import {
-  exportarResultadosCsv
+    exportarResultadosCsv
 } from "./exportar.js";
+
+
+// ------------------------------------------------------
+// Estado general
+// ------------------------------------------------------
 
 const sitiosPorId = {};
 
@@ -39,223 +48,446 @@ let sitioSeleccionado = null;
 let datosPti = [];
 let resultadosActuales = null;
 
+
+// ------------------------------------------------------
+// Actualizar URL compartible
+// ------------------------------------------------------
+
 function actualizarUrl(id) {
-  const url = new URL(window.location.href);
+    const url = new URL(
+        window.location.href
+    );
 
-  if (id) {
-    url.searchParams.set("id", id);
-  } else {
-    url.searchParams.delete("id");
-  }
+    if (id) {
+        url.searchParams.set(
+            "id",
+            id
+        );
+    } else {
+        url.searchParams.delete("id");
+    }
 
-  window.history.replaceState({}, "", url);
+    window.history.replaceState(
+        {},
+        "",
+        url
+    );
 }
+
+
+// ------------------------------------------------------
+// Recalcular resultados PTI
+// ------------------------------------------------------
 
 function recalcularResultados() {
-  if (!sitioSeleccionado || datosPti.length === 0) {
-    resultadosActuales = null;
-    elementos.botonExportar.disabled = true;
-    return;
-  }
+    if (
+        !sitioSeleccionado ||
+        datosPti.length === 0
+    ) {
+        resultadosActuales = null;
+        elementos.botonExportar.disabled = true;
 
-  resultadosActuales = actualizarResultadosPti(
-    sitioSeleccionado,
-    datosPti,
-    Number(elementos.inputRadio.value)
-  );
+        return;
+    }
 
-  elementos.botonExportar.disabled = !resultadosActuales;
+    resultadosActuales =
+        actualizarResultadosPti(
+            sitioSeleccionado,
+            datosPti,
+            Number(
+                elementos.inputRadio.value
+            )
+        );
+
+    elementos.botonExportar.disabled =
+        !resultadosActuales;
 }
 
-function seleccionarSitio(registroSitio) {
-  sitioSeleccionado = registroSitio;
 
-  const p = registroSitio.feature.properties || {};
-  const coordenadas = registroSitio.layer.getLatLng();
-  const radioMetros = Number(elementos.inputRadio.value);
-  const id = String(p.ID || "").trim().toUpperCase();
+// ------------------------------------------------------
+// Seleccionar sitio WOM
+// ------------------------------------------------------
 
-  elementos.inputId.value = id;
+function seleccionarSitio(
+    registroSitio
+) {
+    sitioSeleccionado =
+        registroSitio;
 
-  mostrarDetalleSitio(p, coordenadas);
-  marcarSitioSeleccionado(registroSitio);
-  dibujarCirculo(coordenadas, radioMetros);
-  recalcularResultados();
+    const propiedades =
+        registroSitio.feature.properties || {};
 
-  elementos.botonVolverSitio.disabled = false;
-  elementos.botonCopiarEnlace.disabled = false;
+    const coordenadas =
+        registroSitio.layer.getLatLng();
 
-  actualizarUrl(id);
+    const radioMetros =
+        Number(
+            elementos.inputRadio.value
+        );
 
-  mostrarMensaje(`Sitio ${id} encontrado.`, "exito");
+    const id = String(
+        propiedades.ID || ""
+    )
+        .trim()
+        .toUpperCase();
+
+    elementos.inputId.value =
+        id;
+
+    mostrarDetalleSitio(
+        propiedades,
+        coordenadas
+    );
+
+    marcarSitioSeleccionado(
+        registroSitio
+    );
+
+    dibujarCirculo(
+        coordenadas,
+        radioMetros
+    );
+
+    recalcularResultados();
+
+    elementos.botonVolverSitio.disabled =
+        false;
+
+    elementos.botonCopiarEnlace.disabled =
+        false;
+
+    actualizarUrl(id);
+
+    mostrarMensaje(
+        `Sitio ${id} encontrado.`,
+        "exito"
+    );
 }
+
+
+// ------------------------------------------------------
+// Buscar por ID
+// ------------------------------------------------------
 
 function buscarPorId() {
-  const consulta = elementos.inputId.value
-    .trim()
-    .toUpperCase();
+    const consulta =
+        elementos.inputId.value
+            .trim()
+            .toUpperCase();
 
-  if (!consulta) {
+    if (!consulta) {
+        mostrarMensaje(
+            "Escribe un ID, comuna o región " +
+            "para realizar la búsqueda.",
+            "error"
+        );
+
+        elementos.inputId.focus();
+
+        return;
+    }
+
+    const registroExacto =
+        sitiosPorId[consulta];
+
+    if (registroExacto) {
+        seleccionarSitio(
+            registroExacto
+        );
+
+        return;
+    }
+
     mostrarMensaje(
-      "Escribe un ID, comuna o región para realizar la búsqueda.",
-      "error"
+        `No existe una coincidencia exacta ` +
+        `para ${consulta}. Usa las sugerencias.`,
+        "error"
     );
-    elementos.inputId.focus();
-    return;
-  }
-
-  const registroExacto = sitiosPorId[consulta];
-
-  if (registroExacto) {
-    seleccionarSitio(registroExacto);
-    return;
-  }
-
-  mostrarMensaje(
-    `No existe una coincidencia exacta para ${consulta}. Usa las sugerencias del buscador.`,
-    "error"
-  );
 }
+
+
+// ------------------------------------------------------
+// Cambiar radio
+// ------------------------------------------------------
 
 function actualizarRadio() {
-  const radioMetros = Number(elementos.inputRadio.value);
-  elementos.valorRadio.textContent = radioMetros;
+    const radioMetros =
+        Number(
+            elementos.inputRadio.value
+        );
 
-  if (!sitioSeleccionado) {
-    return;
-  }
+    elementos.valorRadio.textContent =
+        radioMetros;
 
-  dibujarCirculo(
-    sitioSeleccionado.layer.getLatLng(),
-    radioMetros
-  );
+    if (!sitioSeleccionado) {
+        return;
+    }
 
-  recalcularResultados();
+    dibujarCirculo(
+        sitioSeleccionado.layer.getLatLng(),
+        radioMetros
+    );
+
+    recalcularResultados();
 }
+
+
+// ------------------------------------------------------
+// Exportar resultados
+// ------------------------------------------------------
 
 function exportarResultados() {
-  if (!sitioSeleccionado || !resultadosActuales) {
-    mostrarMensaje("Primero selecciona un sitio.", "error");
-    return;
-  }
+    if (
+        !sitioSeleccionado ||
+        !resultadosActuales
+    ) {
+        mostrarMensaje(
+            "Primero selecciona un sitio.",
+            "error"
+        );
 
-  try {
-    exportarResultadosCsv({
-      sitio: sitioSeleccionado,
-      radioMetros: Number(elementos.inputRadio.value),
-      ptiMasCercano: resultadosActuales.ptiMasCercano,
-      ptiDentroDelRadio: resultadosActuales.ptiDentroDelRadio
-    });
+        return;
+    }
 
-    mostrarMensaje("Archivo CSV generado correctamente.", "exito");
-  } catch (error) {
-    console.error(error);
-    mostrarMensaje("No fue posible exportar los resultados.", "error");
-  }
+    try {
+        exportarResultadosCsv({
+            sitio:
+                sitioSeleccionado,
+
+            radioMetros:
+                Number(
+                    elementos.inputRadio.value
+                ),
+
+            ptiMasCercano:
+                resultadosActuales
+                    .ptiMasCercano,
+
+            ptiDentroDelRadio:
+                resultadosActuales
+                    .ptiDentroDelRadio
+        });
+
+        mostrarMensaje(
+            "Archivo CSV generado correctamente.",
+            "exito"
+        );
+    } catch (error) {
+        console.error(error);
+
+        mostrarMensaje(
+            "No fue posible exportar " +
+            "los resultados.",
+            "error"
+        );
+    }
 }
+
+
+// ------------------------------------------------------
+// Copiar enlace
+// ------------------------------------------------------
 
 async function copiarEnlace() {
-  try {
-    await navigator.clipboard.writeText(window.location.href);
-    mostrarMensaje("Enlace copiado al portapapeles.", "exito");
-  } catch {
-    mostrarMensaje(
-      "No fue posible copiar automáticamente. Copia la dirección desde el navegador.",
-      "error"
-    );
-  }
+    try {
+        await navigator.clipboard.writeText(
+            window.location.href
+        );
+
+        mostrarMensaje(
+            "Enlace copiado al portapapeles.",
+            "exito"
+        );
+    } catch (error) {
+        console.error(error);
+
+        mostrarMensaje(
+            "No fue posible copiar el enlace. " +
+            "Cópialo desde la barra del navegador.",
+            "error"
+        );
+    }
 }
+
+
+// ------------------------------------------------------
+// Abrir sitio desde URL
+// ------------------------------------------------------
 
 function abrirSitioDesdeUrl() {
-  const parametros = new URLSearchParams(window.location.search);
-  const id = String(parametros.get("id") || "")
-    .trim()
-    .toUpperCase();
+    const parametros =
+        new URLSearchParams(
+            window.location.search
+        );
 
-  if (!id) {
-    return;
-  }
+    const id = String(
+        parametros.get("id") || ""
+    )
+        .trim()
+        .toUpperCase();
 
-  const registro = sitiosPorId[id];
+    if (!id) {
+        return;
+    }
 
-  if (!registro) {
-    mostrarMensaje(`El ID ${id} de la URL no existe.`, "error");
-    return;
-  }
+    const registro =
+        sitiosPorId[id];
 
-  seleccionarSitio(registro);
+    if (!registro) {
+        mostrarMensaje(
+            `El ID ${id} de la URL no existe.`,
+            "error"
+        );
+
+        return;
+    }
+
+    seleccionarSitio(registro);
 }
+
+
+// ------------------------------------------------------
+// Inicialización
+// ------------------------------------------------------
 
 async function iniciarAplicacion() {
-  mostrarCargaPti();
+    mostrarCargaPti();
 
-  try {
-    const geojson = await cargarSitios();
+    try {
+        const geojson =
+            await cargarSitios();
 
-    const resultadoSitios = crearCapaSitios(
-      geojson,
-      seleccionarSitio
-    );
+        const resultadoSitios =
+            crearCapaSitios(
+                geojson,
+                seleccionarSitio
+            );
 
-    Object.assign(
-      sitiosPorId,
-      resultadoSitios.sitiosPorId
-    );
+        Object.assign(
+            sitiosPorId,
+            resultadoSitios.sitiosPorId
+        );
 
-    configurarAutocompletado({
-      input: elementos.inputId,
-      contenedor: elementos.sugerencias,
-      obtenerRegistros: () => sitiosPorId,
-      alSeleccionar: seleccionarSitio,
-      limite: 10
-    });
+        configurarAutocompletado({
+            input:
+                elementos.inputId,
 
-    mostrarMensaje(
-      `${Object.keys(sitiosPorId).length} sitios cargados.`,
-      "exito"
-    );
-  } catch (error) {
-    console.error("Error al cargar sitios:", error);
-    mostrarMensaje(
-      "No fue posible cargar Sitios.geojson.",
-      "error"
-    );
-    return;
-  }
+            contenedor:
+                elementos.sugerencias,
 
-  try {
-    datosPti = await cargarPti();
-    mostrarPtiCargados(datosPti.length);
-  } catch (error) {
-    console.error("Error al cargar PTI:", error);
-    mostrarErrorPti(error.message || "No fue posible cargar PTI.csv.");
-  }
+            obtenerRegistros:
+                () => sitiosPorId,
 
-  abrirSitioDesdeUrl();
+            alSeleccionar:
+                seleccionarSitio,
+
+            limite: 10
+        });
+
+        mostrarMensaje(
+            `${Object.keys(sitiosPorId).length} ` +
+            `sitios cargados.`,
+            "exito"
+        );
+    } catch (error) {
+        console.error(
+            "Error al cargar sitios:",
+            error
+        );
+
+        mostrarMensaje(
+            "No fue posible cargar " +
+            "Sitios.geojson.",
+            "error"
+        );
+
+        return;
+    }
+
+    try {
+        datosPti =
+            await cargarPti();
+
+        mostrarPtiCargados(
+            datosPti.length
+        );
+
+        crearCapaTodosPti(
+            datosPti
+        );
+    } catch (error) {
+        console.error(
+            "Error al cargar PTI:",
+            error
+        );
+
+        mostrarErrorPti(
+            error.message ||
+            "No fue posible cargar PTI.csv."
+        );
+    }
+
+    abrirSitioDesdeUrl();
 }
 
-elementos.botonBuscar.addEventListener("click", buscarPorId);
 
-elementos.inputId.addEventListener("keydown", evento => {
-  if (evento.key !== "Enter") {
-    return;
-  }
+// ------------------------------------------------------
+// Eventos
+// ------------------------------------------------------
 
-  const activa = elementos.sugerencias.querySelector(
-    ".sugerencia-item.activa"
-  );
+elementos.botonBuscar.addEventListener(
+    "click",
+    buscarPorId
+);
 
-  if (!activa) {
-    buscarPorId();
-  }
-});
 
-elementos.inputRadio.addEventListener("input", actualizarRadio);
+elementos.inputId.addEventListener(
+    "keydown",
+    function(evento) {
+        if (
+            evento.key !== "Enter"
+        ) {
+            return;
+        }
 
-elementos.botonVolverSitio.addEventListener("click", volverAlSitio);
+        const sugerenciaActiva =
+            elementos.sugerencias.querySelector(
+                ".sugerencia-item.activa"
+            );
 
-elementos.botonCopiarEnlace.addEventListener("click", copiarEnlace);
+        if (!sugerenciaActiva) {
+            buscarPorId();
+        }
+    }
+);
 
-elementos.botonExportar.addEventListener("click", exportarResultados);
+
+elementos.inputRadio.addEventListener(
+    "input",
+    actualizarRadio
+);
+
+
+elementos.botonVolverSitio.addEventListener(
+    "click",
+    volverAlSitio
+);
+
+
+elementos.botonCopiarEnlace.addEventListener(
+    "click",
+    copiarEnlace
+);
+
+
+elementos.botonExportar.addEventListener(
+    "click",
+    exportarResultados
+);
+
+
+// ------------------------------------------------------
+// Inicio
+// ------------------------------------------------------
 
 iniciarAplicacion();
