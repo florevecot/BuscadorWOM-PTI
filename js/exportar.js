@@ -1,5 +1,3 @@
-// Exportación CSV
-
 function escaparCsv(valor) {
   const texto = String(valor ?? "");
   return `"${texto.replaceAll('"', '""')}"`;
@@ -34,25 +32,16 @@ export function exportarResultadosCsv({
 
   const columnasExtra = Array.from(
     new Set(
-      [
-        ptiMasCercano,
-        ...ptiDentroDelRadio
-      ].flatMap(pti =>
-        Object.keys(pti.datosOriginales || {})
-      )
+      [ptiMasCercano, ...ptiDentroDelRadio]
+        .flatMap(pti => Object.keys(pti.datosOriginales || {}))
     )
   );
 
-  const encabezados = [
-    ...columnasBase,
-    ...columnasExtra
-  ];
+  const filas = [[...columnasBase, ...columnasExtra]];
 
   const resultados = ptiDentroDelRadio.length > 0
     ? ptiDentroDelRadio
     : [ptiMasCercano];
-
-  const filas = [encabezados];
 
   resultados.forEach(pti => {
     filas.push([
@@ -67,9 +56,7 @@ export function exportarResultadosCsv({
       pti.distancia <= radioMetros ? "Sí" : "No",
       pti.latitud,
       pti.longitud,
-      ...columnasExtra.map(
-        columna => pti.datosOriginales?.[columna] ?? ""
-      )
+      ...columnasExtra.map(columna => pti.datosOriginales?.[columna] ?? "")
     ]);
   });
 
@@ -86,8 +73,7 @@ export function exportarResultadosCsv({
   const enlace = document.createElement("a");
 
   enlace.href = url;
-  enlace.download =
-    `Resultados_${p.ID || "WOM"}_${radioMetros}m.csv`;
+  enlace.download = `Resultados_${p.ID || "WOM"}_${radioMetros}m.csv`;
 
   document.body.appendChild(enlace);
   enlace.click();

@@ -1,5 +1,3 @@
-// Lógica de PTI
-
 import {
   calcularDistanciaMetros,
   textoSeguro,
@@ -25,13 +23,7 @@ export function actualizarResultadosPti(
 ) {
   limpiarMarcadoresPti();
 
-  if (!sitioSeleccionado) {
-    elementos.resultadoPti.innerHTML = `
-      <h2>PTI cercanos</h2>
-      <p class="sin-resultados">Busca o selecciona un sitio.</p>
-    `;
-    return null;
-  }
+  if (!sitioSeleccionado) return null;
 
   if (!datosPti || datosPti.length === 0) {
     elementos.resultadoPti.innerHTML = `
@@ -56,17 +48,14 @@ export function actualizarResultadosPti(
     .sort((a, b) => a.distancia - b.distancia);
 
   const ptiMasCercano = ptiConDistancia[0];
-
   const ptiDentroDelRadio = ptiConDistancia.filter(
     pti => pti.distancia <= radioMetros
   );
 
   const distanciaPromedio =
     ptiDentroDelRadio.length > 0
-      ? ptiDentroDelRadio.reduce(
-          (suma, pti) => suma + pti.distancia,
-          0
-        ) / ptiDentroDelRadio.length
+      ? ptiDentroDelRadio.reduce((suma, pti) => suma + pti.distancia, 0)
+        / ptiDentroDelRadio.length
       : NaN;
 
   const distanciaMaxima =
@@ -155,9 +144,7 @@ export function actualizarResultadosPti(
       tarjeta.addEventListener("click", () => {
         document
           .querySelectorAll(".tarjeta-pti")
-          .forEach(elemento => {
-            elemento.classList.remove("seleccionada");
-          });
+          .forEach(elemento => elemento.classList.remove("seleccionada"));
 
         tarjeta.classList.add("seleccionada");
         enfocarPti(pti, marcador);

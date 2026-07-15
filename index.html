@@ -1,317 +1,218 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Buscador WOM-PTI</title>
 
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
-
-    <title>Buscador WOM-PTI</title>
-
-    <link
-        rel="stylesheet"
-        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    >
-
-    <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="css/style.css">
 </head>
 
 <body>
+  <section id="pantalla-login" class="pantalla-login" aria-label="Inicio de sesión">
+    <div class="tarjeta-login">
+      <div class="marca-login">
+        <div class="icono-login">W</div>
+        <h1>Buscador WOM-PTI</h1>
+        <p>Acceso a búsqueda de sitios WOM, PTI y viviendas cercanas</p>
+      </div>
 
-    <!-- =============================================
-         PANTALLA DE INICIO DE SESIÓN
-    ============================================== -->
-
-    <section
-        id="pantalla-login"
-        class="pantalla-login"
-        aria-label="Inicio de sesión"
-    >
-
-        <div class="tarjeta-login">
-
-            <div class="marca-login">
-                <div class="icono-login">W</div>
-
-                <h1>Buscador WOM-PTI</h1>
-
-                <p>
-                    Acceso a búsqueda de sitios WOM
-                    y PTI cercanos
-                </p>
-            </div>
-
-            <form id="form-login">
-
-                <div class="campo-login">
-                    <label for="login-usuario">
-                        Usuario
-                    </label>
-
-                    <input
-                        id="login-usuario"
-                        type="text"
-                        autocomplete="username"
-                        required
-                    >
-                </div>
-
-                <div class="campo-login">
-                    <label for="login-contrasena">
-                        Contraseña
-                    </label>
-
-                    <div class="contenedor-contrasena">
-
-                        <input
-                            id="login-contrasena"
-                            type="password"
-                            autocomplete="current-password"
-                            required
-                        >
-
-                        <button
-                            id="btn-mostrar-contrasena"
-                            type="button"
-                            class="btn-mostrar-contrasena"
-                            aria-label="Mostrar contraseña"
-                        >
-                            Mostrar
-                        </button>
-
-                    </div>
-                </div>
-
-                <label class="opcion-recordar">
-
-                    <input
-                        id="login-recordar"
-                        type="checkbox"
-                    >
-
-                    <span>
-                        Mantener la sesión iniciada
-                    </span>
-
-                </label>
-
-                <p
-                    id="mensaje-login"
-                    class="mensaje-login"
-                    role="alert"
-                ></p>
-
-                <button
-                    type="submit"
-                    class="btn-ingresar"
-                >
-                    Ingresar
-                </button>
-
-            </form>
-
-            <p class="nota-login">
-                Acceso restringido
-            </p>
-
+      <form id="form-login">
+        <div class="campo-login">
+          <label for="login-usuario">Usuario</label>
+          <input id="login-usuario" type="text" autocomplete="username" required>
         </div>
 
-    </section>
+        <div class="campo-login">
+          <label for="login-contrasena">Contraseña</label>
+          <div class="contenedor-contrasena">
+            <input
+              id="login-contrasena"
+              type="password"
+              autocomplete="current-password"
+              required
+            >
+            <button
+              id="btn-mostrar-contrasena"
+              type="button"
+              class="btn-mostrar-contrasena"
+            >
+              Mostrar
+            </button>
+          </div>
+        </div>
 
+        <label class="opcion-recordar">
+          <input id="login-recordar" type="checkbox">
+          <span>Mantener la sesión iniciada</span>
+        </label>
 
-    <!-- =============================================
-         APLICACIÓN
-    ============================================== -->
+        <p id="mensaje-login" class="mensaje-login" role="alert"></p>
 
-    <div
-        id="aplicacion"
-        class="aplicacion aplicacion-bloqueada"
-    >
+        <button type="submit" class="btn-ingresar">Ingresar</button>
+      </form>
 
-        <aside id="panel">
-
-            <header class="encabezado-app">
-
-                <div class="encabezado-superior">
-
-                    <div>
-                        <h1>Buscador WOM-PTI</h1>
-
-                        <p>
-                            Búsqueda de sitios WOM
-                            y PTI cercanos
-                        </p>
-                    </div>
-
-                    <button
-                        id="btn-cerrar-sesion"
-                        type="button"
-                        class="btn-cerrar-sesion"
-                    >
-                        Salir
-                    </button>
-
-                </div>
-
-            </header>
-
-            <section>
-
-                <label for="input-id">
-                    Buscar sitio por ID, comuna o región
-                </label>
-
-                <div class="contenedor-autocompletado">
-
-                    <div class="grupo-busqueda">
-
-                        <input
-                            id="input-id"
-                            type="text"
-                            placeholder="Ejemplo: AN0900"
-                            autocomplete="off"
-                        >
-
-                        <button
-                            id="btn-buscar"
-                            type="button"
-                        >
-                            Buscar
-                        </button>
-
-                    </div>
-
-                    <div
-                        id="sugerencias"
-                        class="sugerencias oculto"
-                    ></div>
-
-                </div>
-
-                <p id="mensaje"></p>
-
-            </section>
-
-            <hr>
-
-            <section>
-
-                <label for="input-radio">
-                    Radio de búsqueda
-                </label>
-
-                <div class="grupo-radio">
-
-                    <input
-                        id="input-radio"
-                        type="range"
-                        min="50"
-                        max="5000"
-                        step="50"
-                        value="400"
-                    >
-
-                    <strong>
-                        <span id="valor-radio">400</span> m
-                    </strong>
-
-                </div>
-
-            </section>
-
-            <hr>
-
-            <section id="detalle-sitio">
-
-                <h2>Sitio seleccionado</h2>
-
-                <p>
-                    Busca un ID o selecciona un punto
-                    en el mapa.
-                </p>
-
-            </section>
-
-            <hr>
-
-            <section id="estadisticas">
-
-                <h2>Estadísticas</h2>
-
-                <p class="estado-carga">
-                    Selecciona un sitio para calcular
-                    estadísticas.
-                </p>
-
-            </section>
-
-            <hr>
-
-            <section id="resultado-pti">
-
-                <h2>PTI cercanos</h2>
-
-                <p class="estado-carga">
-                    Cargando PTI.csv...
-                </p>
-
-            </section>
-
-            <hr>
-
-            <section class="acciones-panel">
-
-                <button
-                    id="btn-volver-sitio"
-                    class="boton-secundario"
-                    type="button"
-                    disabled
-                >
-                    Volver al sitio WOM
-                </button>
-
-                <button
-                    id="btn-copiar-enlace"
-                    class="boton-secundario"
-                    type="button"
-                    disabled
-                >
-                    Copiar enlace del sitio
-                </button>
-
-                <button
-                    id="btn-exportar"
-                    class="boton-exportar"
-                    type="button"
-                    disabled
-                >
-                    Exportar resultados a CSV
-                </button>
-
-            </section>
-
-        </aside>
-
-        <main id="map"></main>
-
+      <p class="nota-login">Acceso restringido</p>
     </div>
+  </section>
 
+  <div id="aplicacion" class="aplicacion aplicacion-bloqueada">
+    <aside id="panel">
+      <header class="encabezado-app">
+        <div class="encabezado-superior">
+          <div>
+            <h1>Buscador WOM-PTI</h1>
+            <p>Sitios WOM, PTI y viviendas cercanas</p>
+          </div>
+          <button id="btn-cerrar-sesion" type="button" class="btn-cerrar-sesion">
+            Salir
+          </button>
+        </div>
+      </header>
 
-    <script
-        src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    ></script>
+      <section>
+        <label for="input-id">Buscar sitio por ID, comuna o región</label>
 
-    <script
-        src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"
-    ></script>
+        <div class="contenedor-autocompletado">
+          <div class="grupo-busqueda">
+            <input
+              id="input-id"
+              type="text"
+              placeholder="Ejemplo: AN0900"
+              autocomplete="off"
+            >
+            <button id="btn-buscar" type="button">Buscar</button>
+          </div>
+          <div id="sugerencias" class="sugerencias oculto"></div>
+        </div>
 
-    <!-- auth.js carga app.js solo después del login -->
-    <script
-        type="module"
-        src="js/auth.js"
-    ></script>
+        <p id="mensaje"></p>
+      </section>
 
+      <hr>
+
+      <section>
+        <label for="input-radio">Radio de búsqueda PTI</label>
+        <div class="grupo-radio">
+          <input
+            id="input-radio"
+            type="range"
+            min="50"
+            max="5000"
+            step="50"
+            value="400"
+          >
+          <strong><span id="valor-radio">400</span> m</strong>
+        </div>
+      </section>
+
+      <hr>
+
+      <section id="detalle-sitio">
+        <h2>Sitio seleccionado</h2>
+        <p>Busca un ID o selecciona un punto en el mapa.</p>
+      </section>
+
+      <hr>
+
+      <section id="estadisticas">
+        <h2>Estadísticas PTI</h2>
+        <p class="estado-carga">
+          Selecciona un sitio para calcular estadísticas.
+        </p>
+      </section>
+
+      <hr>
+
+      <section id="resultado-pti">
+        <h2>PTI cercanos</h2>
+        <p class="estado-carga">Cargando PTI.csv...</p>
+      </section>
+
+      <hr>
+
+      <section class="seccion-vivienda">
+        <div class="cabecera-opcion">
+          <div>
+            <h2>Vivienda más cercana</h2>
+            <p class="ayuda-corta">Datos consultados desde OpenStreetMap.</p>
+          </div>
+
+          <label class="interruptor" aria-label="Activar búsqueda de viviendas">
+            <input id="activar-vivienda" type="checkbox">
+            <span class="deslizador-interruptor"></span>
+          </label>
+        </div>
+
+        <div id="controles-vivienda" class="controles-vivienda deshabilitado">
+          <label for="input-radio-vivienda">Radio de vivienda</label>
+
+          <div class="grupo-radio">
+            <input
+              id="input-radio-vivienda"
+              type="range"
+              min="50"
+              max="2000"
+              step="50"
+              value="300"
+              disabled
+            >
+            <strong><span id="valor-radio-vivienda">300</span> m</strong>
+          </div>
+
+          <button
+            id="btn-buscar-vivienda"
+            class="boton-vivienda"
+            type="button"
+            disabled
+          >
+            Buscar vivienda
+          </button>
+        </div>
+
+        <div id="resultado-vivienda">
+          <p class="estado-carga">Activa la opción para realizar la búsqueda.</p>
+        </div>
+      </section>
+
+      <hr>
+
+      <section class="acciones-panel">
+        <button
+          id="btn-volver-sitio"
+          class="boton-secundario"
+          type="button"
+          disabled
+        >
+          Volver al sitio WOM
+        </button>
+
+        <button
+          id="btn-copiar-enlace"
+          class="boton-secundario"
+          type="button"
+          disabled
+        >
+          Copiar enlace del sitio
+        </button>
+
+        <button
+          id="btn-exportar"
+          class="boton-exportar"
+          type="button"
+          disabled
+        >
+          Exportar resultados a CSV
+        </button>
+      </section>
+    </aside>
+
+    <main id="map"></main>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script type="module" src="js/auth.js"></script>
 </body>
 </html>

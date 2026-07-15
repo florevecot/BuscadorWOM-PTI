@@ -1,5 +1,3 @@
-// Interfaz de usuario
-
 import {
   textoSeguro,
   escaparHtml,
@@ -18,7 +16,14 @@ export const elementos = {
   resultadoPti: document.getElementById("resultado-pti"),
   botonVolverSitio: document.getElementById("btn-volver-sitio"),
   botonCopiarEnlace: document.getElementById("btn-copiar-enlace"),
-  botonExportar: document.getElementById("btn-exportar")
+  botonExportar: document.getElementById("btn-exportar"),
+
+  activarVivienda: document.getElementById("activar-vivienda"),
+  controlesVivienda: document.getElementById("controles-vivienda"),
+  inputRadioVivienda: document.getElementById("input-radio-vivienda"),
+  valorRadioVivienda: document.getElementById("valor-radio-vivienda"),
+  botonBuscarVivienda: document.getElementById("btn-buscar-vivienda"),
+  resultadoVivienda: document.getElementById("resultado-vivienda")
 };
 
 export function mostrarMensaje(texto, tipo = "") {
@@ -60,6 +65,7 @@ export function mostrarDetalleSitio(propiedades, coordenadas) {
     <p class="detalle-fila"><strong>Contrato:</strong> ${escaparHtml(textoSeguro(p["Contrato"]))}</p>
     <p class="detalle-fila"><strong>Estado:</strong> ${escaparHtml(textoSeguro(p["Estatus Contrato"]))}</p>
     <p class="detalle-fila"><strong>Solución:</strong> ${escaparHtml(textoSeguro(p["Tipo de Solución Validada"]))}</p>
+
     <div class="coordenadas">
       Latitud: ${coordenadas.lat.toFixed(6)}<br>
       Longitud: ${coordenadas.lng.toFixed(6)}
@@ -75,7 +81,8 @@ export function mostrarEstadisticas({
   distanciaMaxima
 }) {
   elementos.estadisticas.innerHTML = `
-    <h2>Estadísticas</h2>
+    <h2>Estadísticas PTI</h2>
+
     <div class="cuadricula-estadisticas">
       <div class="tarjeta-estadistica">
         <div class="valor-estadistica">${cantidadDentro}</div>
@@ -124,5 +131,66 @@ export function mostrarErrorPti(texto) {
   elementos.resultadoPti.innerHTML = `
     <h2>PTI cercanos</h2>
     <p class="sin-resultados">${escaparHtml(texto)}</p>
+  `;
+}
+
+export function mostrarCargaVivienda() {
+  elementos.resultadoVivienda.innerHTML = `
+    <div class="cargando-vivienda">
+      <span class="spinner"></span>
+      Consultando edificios en OpenStreetMap...
+    </div>
+  `;
+}
+
+export function mostrarResultadoVivienda(vivienda) {
+  const esAmpliada = vivienda.metodo === "ampliada";
+
+  elementos.resultadoVivienda.innerHTML = `
+    <div class="tarjeta-vivienda">
+      <div class="titulo-vivienda">Construcción más cercana</div>
+
+      <div>
+        <strong>Tipo:</strong>
+        ${escaparHtml(textoSeguro(vivienda.tipoVisible))}
+      </div>
+
+      <div>
+        <strong>Distancia al centro:</strong>
+        ${formatearDistancia(vivienda.distancia)}
+      </div>
+
+      <div>
+        <strong>Radio consultado:</strong>
+        ${vivienda.radioMetros} m
+      </div>
+
+      <span class="etiqueta-metodo">
+        ${esAmpliada ? "Búsqueda ampliada: cualquier edificio" : "Búsqueda residencial"}
+      </span>
+
+      ${
+        esAmpliada
+          ? `<p class="advertencia-vivienda">
+               No se encontraron edificios clasificados explícitamente como vivienda.
+               El resultado puede corresponder a otro tipo de construcción.
+             </p>`
+          : ""
+      }
+    </div>
+  `;
+}
+
+export function mostrarSinVivienda(radioMetros) {
+  elementos.resultadoVivienda.innerHTML = `
+    <p class="sin-resultados">
+      No se encontraron edificios registrados en OpenStreetMap dentro de ${radioMetros} m.
+    </p>
+  `;
+}
+
+export function mostrarErrorVivienda(texto) {
+  elementos.resultadoVivienda.innerHTML = `
+    <p class="mensaje-error">${escaparHtml(texto)}</p>
   `;
 }

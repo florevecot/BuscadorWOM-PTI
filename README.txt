@@ -1,43 +1,39 @@
-BUSCADOR WOM-PTI
-=================
+BUSCADOR WOM-PTI v3
+====================
 
-1. Reemplaza los archivos de ejemplo:
-   data/Sitios.geojson
-   data/PTI.csv
+NOVEDADES
+---------
+- Los sitios WOM siempre se muestran morados.
+- Capa con todos los PTI.
+- Búsqueda opcional de vivienda o edificio cercano mediante OpenStreetMap.
+- Radio PTI independiente: 50 a 5.000 m, predeterminado 400 m.
+- Radio vivienda independiente: 50 a 2.000 m, predeterminado 300 m.
+- Primero busca edificios residenciales explícitos.
+- Si no encuentra, busca cualquier edificio.
+- Interruptor para prender/apagar la función.
+- La búsqueda de vivienda se ejecuta con botón para evitar consultas innecesarias.
 
-2. El GeoJSON debe ser FeatureCollection y contener un campo ID.
+ARCHIVOS REALES
+---------------
+Reemplaza únicamente:
+data/Sitios.geojson
+data/PTI.csv
 
-3. PTI.csv debe incluir columnas equivalentes a:
-   Nombre, Latitud, Longitud
+EJECUCIÓN LOCAL
+---------------
+py -m http.server 8000
 
-   También reconoce:
-   Name / PTI / Sitio
-   Latitude / Lat
-   Longuitud / Longitude / Lon / Lng
+Abrir:
+http://localhost:8000
 
-4. Abre CMD dentro de la carpeta del proyecto y ejecuta:
+CREDENCIALES BÁSICAS
+--------------------
+Usuario: OOEEWOM
+Contraseña: PTI2026
 
-   py -m http.server 8000
-
-5. Abre en Chrome:
-
-   http://localhost:8000
-
-6. Si el navegador mantiene una versión antigua:
-   - Presiona F12.
-   - Ve a Network.
-   - Marca Disable cache.
-   - Presiona Ctrl + F5.
-
-Funciones incluidas:
-- Buscar por ID, comuna o región.
-- Autocompletado.
-- Radio ajustable de 50 a 5000 metros.
-- PTI más cercano, incluso fuera del radio.
-- Lista de PTI dentro del radio.
-- Estadísticas de distancia.
-- Línea entre sitio WOM y PTI.
-- Mapa de calles y satélite.
-- Popup con todas las columnas de PTI.csv.
-- Exportación a CSV.
-- URL compartible mediante ?id=AN0900.
+NOTA IMPORTANTE
+---------------
+El login es una barrera visual, no autenticación segura.
+Los edificios provienen de OpenStreetMap y su cobertura puede ser incompleta.
+La distancia de vivienda se calcula respecto del centro del objeto OSM,
+no necesariamente al borde más cercano de la construcción.

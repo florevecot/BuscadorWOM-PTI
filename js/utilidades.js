@@ -1,5 +1,3 @@
-// Utilidades generales
-
 export function textoSeguro(valor) {
   if (valor === undefined || valor === null || String(valor).trim() === "") {
     return "Sin información";
@@ -20,12 +18,12 @@ export function convertirNumero(valor) {
     return NaN;
   }
 
-  const texto = String(valor)
-    .trim()
-    .replace(/\s/g, "")
-    .replace(",", ".");
-
-  return Number(texto);
+  return Number(
+    String(valor)
+      .trim()
+      .replace(/\s/g, "")
+      .replace(",", ".")
+  );
 }
 
 export function encontrarNombreColumna(columnas, posiblesNombres) {
@@ -57,8 +55,7 @@ export function calcularDistanciaMetros(lat1, lon1, lat2, lon2) {
     Math.cos(lat2Rad) *
     Math.sin(dLon / 2) ** 2;
 
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return radioTierra * c;
+  return radioTierra * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
 export function escaparHtml(valor) {

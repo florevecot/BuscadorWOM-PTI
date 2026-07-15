@@ -1,5 +1,3 @@
-// Autocompletado
-
 import {
   escaparHtml,
   normalizarTexto
@@ -23,9 +21,7 @@ export function configurarAutocompletado({
   }
 
   function seleccionarIndice(indice) {
-    if (indice < 0 || indice >= resultadosActuales.length) {
-      return;
-    }
+    if (indice < 0 || indice >= resultadosActuales.length) return;
 
     const resultado = resultadosActuales[indice];
     input.value = resultado.id;
@@ -48,9 +44,7 @@ export function configurarAutocompletado({
     indiceActivo = -1;
 
     if (resultados.length === 0) {
-      contenedor.innerHTML = `
-        <div class="sugerencia-item">Sin coincidencias</div>
-      `;
+      contenedor.innerHTML = `<div class="sugerencia-item">Sin coincidencias</div>`;
       contenedor.classList.remove("oculto");
       return;
     }
@@ -58,9 +52,7 @@ export function configurarAutocompletado({
     contenedor.innerHTML = resultados
       .map((resultado, indice) => {
         const p = resultado.registro.feature.properties || {};
-        const contexto = [p["Comuna"], p["Región"]]
-          .filter(Boolean)
-          .join(" · ");
+        const contexto = [p["Comuna"], p["Región"]].filter(Boolean).join(" · ");
 
         return `
           <div class="sugerencia-item" data-indice="${indice}">
@@ -91,17 +83,11 @@ export function configurarAutocompletado({
       return;
     }
 
-    const registros = obtenerRegistros();
-
-    const resultados = Object.entries(registros)
+    const resultados = Object.entries(obtenerRegistros())
       .filter(([id, registro]) => {
         const p = registro.feature.properties || {};
 
-        return [
-          id,
-          p["Comuna"],
-          p["Región"]
-        ].some(valor =>
+        return [id, p["Comuna"], p["Región"]].some(valor =>
           normalizarTexto(valor).includes(consulta)
         );
       })
@@ -129,28 +115,17 @@ export function configurarAutocompletado({
       return;
     }
 
-    if (estaOculto || resultadosActuales.length === 0) {
-      return;
-    }
+    if (estaOculto || resultadosActuales.length === 0) return;
 
     if (evento.key === "ArrowDown") {
       evento.preventDefault();
-      indiceActivo = Math.min(
-        indiceActivo + 1,
-        resultadosActuales.length - 1
-      );
+      indiceActivo = Math.min(indiceActivo + 1, resultadosActuales.length - 1);
       actualizarElementoActivo();
-      return;
-    }
-
-    if (evento.key === "ArrowUp") {
+    } else if (evento.key === "ArrowUp") {
       evento.preventDefault();
       indiceActivo = Math.max(indiceActivo - 1, 0);
       actualizarElementoActivo();
-      return;
-    }
-
-    if (evento.key === "Enter" && indiceActivo >= 0) {
+    } else if (evento.key === "Enter" && indiceActivo >= 0) {
       evento.preventDefault();
       seleccionarIndice(indiceActivo);
     }
@@ -159,6 +134,4 @@ export function configurarAutocompletado({
   input.addEventListener("blur", () => {
     window.setTimeout(cerrarSugerencias, 150);
   });
-
-  return { cerrarSugerencias };
 }

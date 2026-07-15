@@ -1,5 +1,3 @@
-// Carga de datos
-
 import {
   convertirNumero,
   encontrarNombreColumna,
