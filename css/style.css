@@ -440,3 +440,244 @@ button:disabled {
     height: 52vh;
   }
 }
+
+/* =====================================================
+   CONTENEDOR GENERAL DE LA APLICACIÓN
+===================================================== */
+
+.aplicacion {
+    display: flex;
+    width: 100%;
+    height: 100%;
+}
+
+.aplicacion-bloqueada {
+    display: none;
+}
+
+
+/* =====================================================
+   LOGIN
+===================================================== */
+
+.pantalla-login {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background:
+        radial-gradient(
+            circle at top right,
+            rgba(184, 108, 201, 0.55),
+            transparent 38%
+        ),
+        linear-gradient(
+            135deg,
+            #351144,
+            #6d2687 55%,
+            #952ca0
+        );
+    z-index: 10000;
+}
+
+.login-oculto {
+    display: none;
+}
+
+.tarjeta-login {
+    width: 100%;
+    max-width: 420px;
+    padding: 38px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.97);
+    box-shadow:
+        0 24px 70px rgba(0, 0, 0, 0.35);
+}
+
+.marca-login {
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.icono-login {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 66px;
+    height: 66px;
+    margin: 0 auto 18px;
+    border-radius: 20px;
+    background: #7d3c98;
+    color: #ffffff;
+    font-size: 31px;
+    font-weight: 800;
+    box-shadow:
+        0 10px 25px rgba(125, 60, 152, 0.35);
+}
+
+.marca-login h1 {
+    margin: 0 0 7px;
+    color: #552169;
+    font-size: 28px;
+}
+
+.marca-login p {
+    margin: 0;
+    color: #6e6e6e;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.campo-login {
+    margin-bottom: 18px;
+}
+
+.campo-login label {
+    margin-bottom: 7px;
+    color: #353535;
+}
+
+.campo-login input {
+    width: 100%;
+    padding: 13px;
+    border: 1px solid #c9c9c9;
+    border-radius: 8px;
+    font-size: 16px;
+    outline: none;
+}
+
+.campo-login input:focus {
+    border-color: #7d3c98;
+    box-shadow:
+        0 0 0 3px rgba(125, 60, 152, 0.13);
+}
+
+.contenedor-contrasena {
+    position: relative;
+}
+
+.contenedor-contrasena input {
+    padding-right: 88px;
+}
+
+.btn-mostrar-contrasena {
+    position: absolute;
+    top: 50%;
+    right: 8px;
+    padding: 6px 8px;
+    border: 0;
+    border-radius: 5px;
+    background: transparent;
+    color: #6d2687;
+    font-weight: 700;
+    cursor: pointer;
+    transform: translateY(-50%);
+}
+
+.btn-mostrar-contrasena:hover {
+    background: #f3e9f6;
+}
+
+.opcion-recordar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 4px 0 10px;
+    color: #555555;
+    font-size: 14px;
+    font-weight: 400;
+    cursor: pointer;
+}
+
+.opcion-recordar input {
+    width: 16px;
+    height: 16px;
+    accent-color: #7d3c98;
+}
+
+.mensaje-login {
+    min-height: 21px;
+    margin: 10px 0;
+    text-align: center;
+    font-size: 14px;
+}
+
+.error-login {
+    color: #b00020;
+}
+
+.btn-ingresar {
+    width: 100%;
+    padding: 13px;
+    border: 0;
+    border-radius: 8px;
+    background: #7d3c98;
+    color: #ffffff;
+    font-size: 16px;
+    font-weight: 750;
+    cursor: pointer;
+    transition:
+        background 0.2s,
+        transform 0.2s;
+}
+
+.btn-ingresar:hover {
+    background: #602e75;
+    transform: translateY(-1px);
+}
+
+.nota-login {
+    margin: 20px 0 0;
+    color: #8a8a8a;
+    text-align: center;
+    font-size: 12px;
+}
+
+
+/* =====================================================
+   ENCABEZADO Y CERRAR SESIÓN
+===================================================== */
+
+.encabezado-superior {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.btn-cerrar-sesion {
+    flex-shrink: 0;
+    padding: 7px 10px;
+    border: 1px solid #7d3c98;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #6d2687;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.btn-cerrar-sesion:hover {
+    background: #f3eaf6;
+}
+
+
+/* =====================================================
+   LOGIN RESPONSIVE
+===================================================== */
+
+@media (max-width: 520px) {
+    .pantalla-login {
+        padding: 14px;
+    }
+
+    .tarjeta-login {
+        padding: 28px 22px;
+    }
+
+    .marca-login h1 {
+        font-size: 24px;
+    }
+}
