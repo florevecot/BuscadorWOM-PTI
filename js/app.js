@@ -4,14 +4,14 @@ import {
 } from "./data.js";
 
 import {
-  crearCapaSitios,
-  crearCapaTodosPti,
-  marcarSitioSeleccionado,
-  dibujarCirculo,
-  volverAlSitio,
-  dibujarRadioVivienda,
-  mostrarViviendaEnMapa,
-  limpiarResultadoViviendaMapa
+    crearCapaSitios,
+    crearCapaTodosPti,
+    marcarSitioSeleccionado,
+    dibujarCirculo,
+    volverAlSitio,
+    dibujarRadioVivienda,
+    mostrarViviendaEnMapa,
+    limpiarResultadoViviendaMapa
 } from "./mapa.js";
 
 import {
