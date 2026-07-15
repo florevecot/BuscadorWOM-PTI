@@ -37,3 +37,15 @@ El login es una barrera visual, no autenticación segura.
 Los edificios provienen de OpenStreetMap y su cobertura puede ser incompleta.
 La distancia de vivienda se calcula respecto del centro del objeto OSM,
 no necesariamente al borde más cercano de la construcción.
+
+
+NOVEDADES v4
+------------
+- Botón "Nueva búsqueda".
+- Restablece radio PTI a 400 m y vivienda a 300 m.
+- Elimina selección, círculos, líneas y resultados.
+- Regresa suavemente a la vista inicial de Chile.
+- Botón para copiar el ID.
+- Botón para abrir el sitio en Google Maps.
+- Notificaciones tipo toast.
+- La búsqueda con Enter sigue disponible.

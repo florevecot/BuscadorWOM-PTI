@@ -324,142 +324,126 @@ export function volverAlSitio() {
   mapa.setView(coordenadasSitioSeleccionado, 18);
 }
 
-// ------------------------------------------------------
-// CAPAS DE VIVIENDA
-// ------------------------------------------------------
+export function dibujarRadioVivienda(coordenadas, radioMetros) {
+  if (circuloVivienda) {
+    mapa.removeLayer(circuloVivienda);
+  }
 
-export function dibujarRadioVivienda(
-    coordenadas,
-    radioMetros
-) {
-    if (circuloVivienda) {
-        mapa.removeLayer(circuloVivienda);
-    }
+  circuloVivienda = L.circle(coordenadas, {
+    radius: radioMetros,
+    color: "#008c95",
+    weight: 2,
+    opacity: 0.9,
+    dashArray: "7, 6",
+    fillColor: "#00a7b3",
+    fillOpacity: 0.07
+  }).addTo(mapa);
 
-    circuloVivienda = L.circle(
-        coordenadas,
-        {
-            radius: radioMetros,
-            color: "#008c95",
-            weight: 2,
-            opacity: 0.9,
-            dashArray: "7, 6",
-            fillColor: "#00a7b3",
-            fillOpacity: 0.07
-        }
-    ).addTo(mapa);
-
-    return circuloVivienda;
+  return circuloVivienda;
 }
-
 
 export function mostrarViviendaEnMapa(vivienda) {
-    limpiarResultadoViviendaMapa(false);
+  limpiarResultadoViviendaMapa(false);
 
-    if (!coordenadasSitioSeleccionado) {
-        return;
+  if (!coordenadasSitioSeleccionado) return;
+
+  marcadorVivienda = L.circleMarker(
+    [vivienda.latitud, vivienda.longitud],
+    {
+      radius: 10,
+      color: "#ffffff",
+      weight: 3,
+      fillColor: "#00a7b3",
+      fillOpacity: 1
     }
+  ).addTo(mapa);
 
-    marcadorVivienda = L.circleMarker(
-        [
-            vivienda.latitud,
-            vivienda.longitud
-        ],
-        {
-            radius: 10,
-            color: "#ffffff",
-            weight: 3,
-            fillColor: "#00a7b3",
-            fillOpacity: 1
-        }
-    ).addTo(mapa);
+  marcadorVivienda.bindPopup(`
+    <h3>Construcción cercana</h3>
+    <b>Tipo:</b> ${escaparHtml(textoSeguro(vivienda.tipoVisible))}<br>
+    <b>Distancia al centro:</b> ${formatearDistancia(vivienda.distancia)}<br>
+    <b>Fuente:</b> OpenStreetMap<br>
+    <b>ID OSM:</b> ${escaparHtml(`${vivienda.tipoElemento}/${vivienda.id}`)}
+  `);
 
-    marcadorVivienda.bindPopup(`
-        <h3>Construcción cercana</h3>
+  lineaVivienda = L.polyline(
+    [
+      coordenadasSitioSeleccionado,
+      [vivienda.latitud, vivienda.longitud]
+    ],
+    {
+      color: "#008c95",
+      weight: 3,
+      opacity: 0.9,
+      dashArray: "5, 6"
+    }
+  ).addTo(mapa);
 
-        <b>Tipo:</b>
-        ${escaparHtml(
-            textoSeguro(vivienda.tipoVisible)
-        )}
-        <br>
+  lineaVivienda.bindTooltip(
+    formatearDistancia(vivienda.distancia),
+    {
+      permanent: true,
+      direction: "center",
+      className: "tooltip-vivienda"
+    }
+  );
 
-        <b>Distancia:</b>
-        ${formatearDistancia(vivienda.distancia)}
-        <br>
+  mapa.fitBounds(
+    L.latLngBounds([
+      coordenadasSitioSeleccionado,
+      [vivienda.latitud, vivienda.longitud]
+    ]),
+    {
+      padding: [60, 60],
+      maxZoom: 19
+    }
+  );
 
-        <b>Fuente:</b>
-        OpenStreetMap
-        <br>
+  marcadorVivienda.openPopup();
+}
 
-        <b>ID OSM:</b>
-        ${escaparHtml(
-            `${vivienda.tipoElemento}/${vivienda.id}`
-        )}
-    `);
+export function limpiarResultadoViviendaMapa(incluirCirculo = true) {
+  if (marcadorVivienda) {
+    mapa.removeLayer(marcadorVivienda);
+    marcadorVivienda = null;
+  }
 
-    lineaVivienda = L.polyline(
-        [
-            coordenadasSitioSeleccionado,
-            [
-                vivienda.latitud,
-                vivienda.longitud
-            ]
-        ],
-        {
-            color: "#008c95",
-            weight: 3,
-            opacity: 0.9,
-            dashArray: "5, 6"
-        }
-    ).addTo(mapa);
+  if (lineaVivienda) {
+    mapa.removeLayer(lineaVivienda);
+    lineaVivienda = null;
+  }
 
-    lineaVivienda.bindTooltip(
-        formatearDistancia(
-            vivienda.distancia
-        ),
-        {
-            permanent: true,
-            direction: "center",
-            className: "tooltip-vivienda"
-        }
-    );
-
-    mapa.fitBounds(
-        L.latLngBounds([
-            coordenadasSitioSeleccionado,
-            [
-                vivienda.latitud,
-                vivienda.longitud
-            ]
-        ]),
-        {
-            padding: [60, 60],
-            maxZoom: 19
-        }
-    );
-
-    marcadorVivienda.openPopup();
+  if (incluirCirculo && circuloVivienda) {
+    mapa.removeLayer(circuloVivienda);
+    circuloVivienda = null;
+  }
 }
 
 
-export function limpiarResultadoViviendaMapa(
-    incluirCirculo = true
-) {
-    if (marcadorVivienda) {
-        mapa.removeLayer(marcadorVivienda);
-        marcadorVivienda = null;
-    }
+export function reiniciarMapa() {
+  limpiarMarcadoresPti();
+  limpiarResultadoViviendaMapa(true);
+  limpiarLineaConexion();
 
-    if (lineaVivienda) {
-        mapa.removeLayer(lineaVivienda);
-        lineaVivienda = null;
-    }
+  if (marcadorSeleccionado) {
+    mapa.removeLayer(marcadorSeleccionado);
+    marcadorSeleccionado = null;
+  }
 
-    if (
-        incluirCirculo &&
-        circuloVivienda
-    ) {
-        mapa.removeLayer(circuloVivienda);
-        circuloVivienda = null;
+  if (circuloBusqueda) {
+    mapa.removeLayer(circuloBusqueda);
+    circuloBusqueda = null;
+  }
+
+  coordenadasSitioSeleccionado = null;
+  mapa.closePopup();
+
+  mapa.flyTo(
+    [-33.45, -70.66],
+    5,
+    {
+      animate: true,
+      duration: 0.9
     }
+  );
 }

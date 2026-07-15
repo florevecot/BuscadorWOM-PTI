@@ -4,14 +4,15 @@ import {
 } from "./data.js";
 
 import {
-    crearCapaSitios,
-    crearCapaTodosPti,
-    marcarSitioSeleccionado,
-    dibujarCirculo,
-    volverAlSitio,
-    dibujarRadioVivienda,
-    mostrarViviendaEnMapa,
-    limpiarResultadoViviendaMapa
+  crearCapaSitios,
+  crearCapaTodosPti,
+  marcarSitioSeleccionado,
+  dibujarCirculo,
+  volverAlSitio,
+  dibujarRadioVivienda,
+  mostrarViviendaEnMapa,
+  limpiarResultadoViviendaMapa,
+  reiniciarMapa
 } from "./mapa.js";
 
 import {
@@ -24,7 +25,9 @@ import {
   mostrarCargaVivienda,
   mostrarResultadoVivienda,
   mostrarSinVivienda,
-  mostrarErrorVivienda
+  mostrarErrorVivienda,
+  mostrarToast,
+  reiniciarPaneles
 } from "./ui.js";
 
 import { actualizarResultadosPti } from "./pti.js";
@@ -96,6 +99,8 @@ function seleccionarSitio(registroSitio) {
   reiniciarViviendaParaNuevoSitio();
 
   elementos.botonVolverSitio.disabled = false;
+  elementos.botonCopiarId.disabled = false;
+  elementos.botonGoogleMaps.disabled = false;
   elementos.botonCopiarEnlace.disabled = false;
 
   actualizarUrl(id);
@@ -262,13 +267,82 @@ function exportarResultados() {
 async function copiarEnlace() {
   try {
     await navigator.clipboard.writeText(window.location.href);
-    mostrarMensaje("Enlace copiado al portapapeles.", "exito");
+    mostrarToast("Enlace copiado al portapapeles.");
   } catch {
     mostrarMensaje(
       "No fue posible copiar automáticamente. Copia la dirección desde el navegador.",
       "error"
     );
   }
+}
+
+
+async function copiarId() {
+  if (!sitioSeleccionado) {
+    mostrarToast("Primero selecciona un sitio.", "error");
+    return;
+  }
+
+  const id = String(
+    sitioSeleccionado.feature.properties?.ID || ""
+  ).trim();
+
+  try {
+    await navigator.clipboard.writeText(id);
+    mostrarToast(`ID ${id} copiado.`);
+  } catch {
+    mostrarToast("No fue posible copiar el ID.", "error");
+  }
+}
+
+function abrirGoogleMaps() {
+  if (!sitioSeleccionado) {
+    mostrarToast("Primero selecciona un sitio.", "error");
+    return;
+  }
+
+  const coordenadas = sitioSeleccionado.layer.getLatLng();
+  const url = `https://www.google.com/maps?q=${coordenadas.lat},${coordenadas.lng}`;
+
+  window.open(url, "_blank", "noopener,noreferrer");
+}
+
+function reiniciarBusqueda() {
+  sitioSeleccionado = null;
+  resultadosActuales = null;
+  consultaViviendaEnCurso = false;
+
+  elementos.inputId.value = "";
+  elementos.inputRadio.value = "400";
+  elementos.valorRadio.textContent = "400";
+
+  elementos.activarVivienda.checked = false;
+  elementos.inputRadioVivienda.value = "300";
+  elementos.valorRadioVivienda.textContent = "300";
+  elementos.inputRadioVivienda.disabled = true;
+  elementos.botonBuscarVivienda.disabled = true;
+  elementos.controlesVivienda.classList.add("deshabilitado");
+
+  elementos.botonVolverSitio.disabled = true;
+  elementos.botonCopiarId.disabled = true;
+  elementos.botonGoogleMaps.disabled = true;
+  elementos.botonCopiarEnlace.disabled = true;
+  elementos.botonExportar.disabled = true;
+
+  elementos.sugerencias.innerHTML = "";
+  elementos.sugerencias.classList.add("oculto");
+
+  mostrarMensaje(
+    `${Object.keys(sitiosPorId).length} sitios cargados.`,
+    "exito"
+  );
+
+  reiniciarPaneles();
+  reiniciarMapa();
+  actualizarUrl("");
+  elementos.inputId.focus();
+
+  mostrarToast("Búsqueda reiniciada.");
 }
 
 function abrirSitioDesdeUrl() {
@@ -344,6 +418,9 @@ elementos.inputId.addEventListener("keydown", evento => {
 
 elementos.inputRadio.addEventListener("input", actualizarRadio);
 elementos.botonVolverSitio.addEventListener("click", volverAlSitio);
+elementos.botonReiniciar.addEventListener("click", reiniciarBusqueda);
+elementos.botonCopiarId.addEventListener("click", copiarId);
+elementos.botonGoogleMaps.addEventListener("click", abrirGoogleMaps);
 elementos.botonCopiarEnlace.addEventListener("click", copiarEnlace);
 elementos.botonExportar.addEventListener("click", exportarResultados);
 

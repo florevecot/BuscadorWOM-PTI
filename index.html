@@ -84,6 +84,14 @@
             >
             <button id="btn-buscar" type="button">Buscar</button>
           </div>
+
+          <button
+            id="btn-reiniciar"
+            class="boton-reiniciar"
+            type="button"
+          >
+            ↺ Nueva búsqueda
+          </button>
           <div id="sugerencias" class="sugerencias oculto"></div>
         </div>
 
@@ -189,6 +197,24 @@
         </button>
 
         <button
+          id="btn-copiar-id"
+          class="boton-secundario"
+          type="button"
+          disabled
+        >
+          Copiar ID
+        </button>
+
+        <button
+          id="btn-google-maps"
+          class="boton-secundario"
+          type="button"
+          disabled
+        >
+          Abrir en Google Maps
+        </button>
+
+        <button
           id="btn-copiar-enlace"
           class="boton-secundario"
           type="button"
@@ -210,6 +236,8 @@
 
     <main id="map"></main>
   </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>

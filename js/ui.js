@@ -15,8 +15,12 @@ export const elementos = {
   estadisticas: document.getElementById("estadisticas"),
   resultadoPti: document.getElementById("resultado-pti"),
   botonVolverSitio: document.getElementById("btn-volver-sitio"),
+  botonReiniciar: document.getElementById("btn-reiniciar"),
+  botonCopiarId: document.getElementById("btn-copiar-id"),
+  botonGoogleMaps: document.getElementById("btn-google-maps"),
   botonCopiarEnlace: document.getElementById("btn-copiar-enlace"),
   botonExportar: document.getElementById("btn-exportar"),
+  toast: document.getElementById("toast"),
 
   activarVivienda: document.getElementById("activar-vivienda"),
   controlesVivienda: document.getElementById("controles-vivienda"),
@@ -192,5 +196,47 @@ export function mostrarSinVivienda(radioMetros) {
 export function mostrarErrorVivienda(texto) {
   elementos.resultadoVivienda.innerHTML = `
     <p class="mensaje-error">${escaparHtml(texto)}</p>
+  `;
+}
+
+
+let temporizadorToast = null;
+
+export function mostrarToast(texto, tipo = "exito") {
+  if (!elementos.toast) return;
+
+  window.clearTimeout(temporizadorToast);
+  elementos.toast.textContent = texto;
+  elementos.toast.className = `toast visible ${tipo}`;
+
+  temporizadorToast = window.setTimeout(() => {
+    elementos.toast.className = "toast";
+  }, 2600);
+}
+
+export function reiniciarPaneles() {
+  elementos.detalleSitio.innerHTML = `
+    <h2>Sitio seleccionado</h2>
+    <p>Busca un ID o selecciona un punto en el mapa.</p>
+  `;
+
+  elementos.estadisticas.innerHTML = `
+    <h2>Estadísticas PTI</h2>
+    <p class="estado-carga">
+      Selecciona un sitio para calcular estadísticas.
+    </p>
+  `;
+
+  elementos.resultadoPti.innerHTML = `
+    <h2>PTI cercanos</h2>
+    <p class="estado-carga">
+      Busca un sitio para calcular distancias.
+    </p>
+  `;
+
+  elementos.resultadoVivienda.innerHTML = `
+    <p class="estado-carga">
+      Activa la opción para realizar la búsqueda.
+    </p>
   `;
 }
