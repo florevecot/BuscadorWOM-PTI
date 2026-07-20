@@ -1,7 +1,7 @@
 // ======================================================
 // ANÁLISIS MASIVO DE SITIOS WOM
 // ======================================================
-
+console.log("APP.JS INICIADO - V11");
 import {
     calcularDistanciaMetros
 } from "./utilidades.js";
