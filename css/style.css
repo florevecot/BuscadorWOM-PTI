@@ -753,7 +753,3 @@ button:disabled {
     max-width: none;
   }
 }
-
-
-/* ANÁLISIS MASIVO */
-.resumen-radios-masivos{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:14px 0}.resumen-radios-masivos>div{padding:10px;border:1px solid #dfdfdf;border-radius:8px;background:#fafafa}.resumen-radios-masivos span{display:block;margin-bottom:3px;color:#707070;font-size:11px}.resumen-radios-masivos strong{color:#6d2687;font-size:16px}.acciones-analisis-masivo{display:flex;flex-direction:column;gap:8px}.boton-analisis,.boton-cancelar,.boton-descargar-analisis{width:100%;padding:10px;border-radius:6px;font-size:14px;font-weight:700;cursor:pointer}.boton-analisis{border:0;background:#6d2687;color:#fff}.boton-cancelar{border:1px solid #b00020;background:#fff;color:#b00020}.boton-descargar-analisis{border:0;background:#138a46;color:#fff}.panel-progreso{margin-top:14px;padding:12px;border:1px solid #d8d8d8;border-radius:8px;background:#fafafa}.fila-progreso{display:flex;justify-content:space-between;gap:10px;margin-bottom:8px;font-size:13px}.barra-progreso{width:100%;height:11px;overflow:hidden;border-radius:20px;background:#e2e2e2}.relleno-progreso{width:0;height:100%;border-radius:inherit;background:linear-gradient(90deg,#6d2687,#9b59b6);transition:width .25s}.detalle-progreso{min-height:18px;margin:8px 0 0;color:#666;font-size:12px}.advertencia-masiva{margin:12px 0 0;color:#7a5600;font-size:11px;line-height:1.45}
