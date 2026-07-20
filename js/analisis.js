@@ -1,1 +1,433 @@
-import {calcularDistanciaMetros} from "./utilidades.js";\nimport {buscarViviendaMasCercana} from "./viviendas.js";\nlet cancelarSolicitado=false;let resultadosMasivos=[];\nconst esperar=ms=>new Promise(r=>setTimeout(r,ms));\nfunction formatearNumeroChile(v,d=6){const n=Number(v);return Number.isFinite(n)?n.toFixed(d).replace(".",","):"";}\nfunction escaparCsv(v){return `"${String(v??"").replaceAll('"','""')}"`;}\nfunction obtenerPtiMasCercano(c,datos){let m=null;for(const pti of datos||[]){const distancia=calcularDistanciaMetros(c.lat,c.lng,pti.latitud,pti.longitud);if(!m||distancia<m.distancia)m={...pti,distancia};}return m;}\nasync function buscarViviendaConReintentos(lat,lon,radio,max=2){let e;for(let i=1;i<=max;i++){try{return await buscarViviendaMasCercana(lat,lon,radio);}catch(err){e=err;if(i<max)await esperar(1800);}}throw e;}\nexport function cancelarAnalisisMasivo(){cancelarSolicitado=true;}\nexport function obtenerResultadosMasivos(){return [...resultadosMasivos];}\nexport async function ejecutarAnalisisMasivo({sitiosPorId,datosPti,radioPti,radioVivienda,alProgreso}){cancelarSolicitado=false;resultadosMasivos=[];const registros=Object.entries(sitiosPorId);let errores=0;for(let i=0;i<registros.length;i++){if(cancelarSolicitado)break;const [id,registro]=registros[i];const p=registro.feature.properties||{};const c=registro.layer.getLatLng();alProgreso?.({procesados:i,total:registros.length,idSitio:id,etapa:"Calculando PTI"});const pti=obtenerPtiMasCercano(c,datosPti);let vivienda=null,estadoVivienda="Sin edificio dentro del radio",errorVivienda="";alProgreso?.({procesados:i,total:registros.length,idSitio:id,etapa:"Consultando vivienda"});try{vivienda=await buscarViviendaConReintentos(c.lat,c.lng,radioVivienda,2);if(vivienda)estadoVivienda=vivienda.metodo==="ampliada"?"Edificio encontrado con búsqueda ampliada":"Vivienda residencial encontrada";}catch(error){errores++;estadoVivienda="Error de consulta";errorVivienda=error?.message||"Error desconocido";}resultadosMasivos.push({idSitio:id,region:p["Región"]||"",comuna:p["Comuna"]||"",proyecto:p["Proyecto unico Portafolio"]||"",etapaOoee:p["Etapa OOEE"]||"",estadoContrato:p["Estatus Contrato"]||"",latitudSitio:c.lat,longitudSitio:c.lng,radioPti,nombrePti:pti?.nombre||"",distanciaPti:pti?.distancia??NaN,ptiDentroRadio:pti&&pti.distancia<=radioPti?"Sí":"No",latitudPti:pti?.latitud??NaN,longitudPti:pti?.longitud??NaN,radioVivienda,tipoVivienda:vivienda?.tipoVisible||"",tipoBuilding:vivienda?.tipoBuilding||"",distanciaVivienda:vivienda?.distancia??NaN,viviendaDentroRadio:vivienda?"Sí":"No",metodoVivienda:vivienda?.metodo||"",latitudVivienda:vivienda?.latitud??NaN,longitudVivienda:vivienda?.longitud??NaN,idOsm:vivienda?`${vivienda.tipoElemento}/${vivienda.id}`:"",estadoVivienda,errorVivienda});alProgreso?.({procesados:i+1,total:registros.length,idSitio:id,etapa:"Sitio completado"});if(i<registros.length-1&&!cancelarSolicitado)await esperar(1200);}return{resultados:[...resultadosMasivos],errores,cancelado:cancelarSolicitado,totalEsperado:registros.length};}\nexport function descargarAnalisisMasivoCsv(resultados){if(!resultados?.length)throw new Error("No existen resultados masivos para descargar.");const h=["ID sitio WOM","Región","Comuna","Proyecto","Etapa OOEE","Estado contrato","Latitud sitio WOM","Longitud sitio WOM","Radio PTI (m)","PTI más cercano","Distancia PTI (m)","PTI dentro del radio","Latitud PTI","Longitud PTI","Radio vivienda (m)","Vivienda/edificio más cercano","Tipo building OSM","Distancia vivienda/edificio (m)","Vivienda/edificio dentro del radio","Método búsqueda vivienda","Latitud vivienda/edificio","Longitud vivienda/edificio","ID OSM","Estado análisis vivienda","Detalle error"];const filas=[h];for(const r of resultados)filas.push([r.idSitio,r.region,r.comuna,r.proyecto,r.etapaOoee,r.estadoContrato,formatearNumeroChile(r.latitudSitio),formatearNumeroChile(r.longitudSitio),r.radioPti,r.nombrePti,Number.isFinite(r.distanciaPti)?Math.round(r.distanciaPti):"",r.ptiDentroRadio,formatearNumeroChile(r.latitudPti),formatearNumeroChile(r.longitudPti),r.radioVivienda,r.tipoVivienda,r.tipoBuilding,Number.isFinite(r.distanciaVivienda)?Math.round(r.distanciaVivienda):"",r.viviendaDentroRadio,r.metodoVivienda,formatearNumeroChile(r.latitudVivienda),formatearNumeroChile(r.longitudVivienda),r.idOsm,r.estadoVivienda,r.errorVivienda]);const contenido=filas.map(f=>f.map(escaparCsv).join(";")).join("\r\n");const blob=new Blob(["\uFEFF",contenido],{type:"text/csv;charset=utf-8;"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=`Analisis_completo_WOM_PTI_viviendas_${new Date().toISOString().slice(0,10)}.csv`;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);}\n
+console.log("ANALISIS.JS CARGADO - V11");
+
+import {
+    calcularDistanciaMetros
+} from "./utilidades.js";
+
+import {
+    buscarViviendaMasCercana
+} from "./viviendas.js";
+
+
+let cancelarSolicitado = false;
+let resultadosMasivos = [];
+
+
+function esperar(milisegundos) {
+    return new Promise(resolve => {
+        window.setTimeout(resolve, milisegundos);
+    });
+}
+
+
+function formatearNumeroChile(
+    valor,
+    decimales = 6
+) {
+    const numero = Number(valor);
+
+    if (!Number.isFinite(numero)) {
+        return "";
+    }
+
+    return numero
+        .toFixed(decimales)
+        .replace(".", ",");
+}
+
+
+function escaparCsv(valor) {
+    const texto = String(valor ?? "");
+
+    return `"${texto.replaceAll('"', '""')}"`;
+}
+
+
+function obtenerPtiMasCercano(
+    coordenadas,
+    datosPti
+) {
+    let masCercano = null;
+
+    for (const pti of datosPti || []) {
+        const distancia = calcularDistanciaMetros(
+            coordenadas.lat,
+            coordenadas.lng,
+            pti.latitud,
+            pti.longitud
+        );
+
+        if (
+            !masCercano ||
+            distancia < masCercano.distancia
+        ) {
+            masCercano = {
+                ...pti,
+                distancia
+            };
+        }
+    }
+
+    return masCercano;
+}
+
+
+async function buscarViviendaConReintentos(
+    latitud,
+    longitud,
+    radioMetros,
+    maxIntentos = 2
+) {
+    let ultimoError = null;
+
+    for (
+        let intento = 1;
+        intento <= maxIntentos;
+        intento += 1
+    ) {
+        try {
+            return await buscarViviendaMasCercana(
+                latitud,
+                longitud,
+                radioMetros
+            );
+        } catch (error) {
+            ultimoError = error;
+
+            if (intento < maxIntentos) {
+                await esperar(1800);
+            }
+        }
+    }
+
+    throw ultimoError;
+}
+
+
+export function cancelarAnalisisMasivo() {
+    cancelarSolicitado = true;
+}
+
+
+export function obtenerResultadosMasivos() {
+    return [...resultadosMasivos];
+}
+
+
+export async function ejecutarAnalisisMasivo({
+    sitiosPorId,
+    datosPti,
+    radioPti,
+    radioVivienda,
+    alProgreso
+}) {
+    cancelarSolicitado = false;
+    resultadosMasivos = [];
+
+    const registros = Object.entries(
+        sitiosPorId || {}
+    );
+
+    let errores = 0;
+
+    for (
+        let indice = 0;
+        indice < registros.length;
+        indice += 1
+    ) {
+        if (cancelarSolicitado) {
+            break;
+        }
+
+        const [id, registro] = registros[indice];
+
+        const propiedades =
+            registro.feature.properties || {};
+
+        const coordenadas =
+            registro.layer.getLatLng();
+
+        alProgreso?.({
+            procesados: indice,
+            total: registros.length,
+            idSitio: id,
+            etapa: "Calculando PTI"
+        });
+
+        const pti = obtenerPtiMasCercano(
+            coordenadas,
+            datosPti
+        );
+
+        let vivienda = null;
+        let estadoVivienda =
+            "Sin edificio dentro del radio";
+        let errorVivienda = "";
+
+        alProgreso?.({
+            procesados: indice,
+            total: registros.length,
+            idSitio: id,
+            etapa: "Consultando vivienda"
+        });
+
+        try {
+            vivienda =
+                await buscarViviendaConReintentos(
+                    coordenadas.lat,
+                    coordenadas.lng,
+                    radioVivienda,
+                    2
+                );
+
+            if (vivienda) {
+                estadoVivienda =
+                    vivienda.metodo === "ampliada"
+                        ? "Edificio encontrado con búsqueda ampliada"
+                        : "Vivienda residencial encontrada";
+            }
+        } catch (error) {
+            errores += 1;
+            estadoVivienda = "Error de consulta";
+            errorVivienda =
+                error?.message || "Error desconocido";
+        }
+
+        resultadosMasivos.push({
+            idSitio: id,
+
+            region:
+                propiedades["Región"] || "",
+
+            comuna:
+                propiedades["Comuna"] || "",
+
+            proyecto:
+                propiedades[
+                    "Proyecto unico Portafolio"
+                ] || "",
+
+            etapaOoee:
+                propiedades["Etapa OOEE"] || "",
+
+            estadoContrato:
+                propiedades[
+                    "Estatus Contrato"
+                ] || "",
+
+            latitudSitio:
+                coordenadas.lat,
+
+            longitudSitio:
+                coordenadas.lng,
+
+            radioPti,
+
+            nombrePti:
+                pti?.nombre || "",
+
+            distanciaPti:
+                pti?.distancia ?? NaN,
+
+            ptiDentroRadio:
+                pti && pti.distancia <= radioPti
+                    ? "Sí"
+                    : "No",
+
+            latitudPti:
+                pti?.latitud ?? NaN,
+
+            longitudPti:
+                pti?.longitud ?? NaN,
+
+            radioVivienda,
+
+            tipoVivienda:
+                vivienda?.tipoVisible || "",
+
+            tipoBuilding:
+                vivienda?.tipoBuilding || "",
+
+            distanciaVivienda:
+                vivienda?.distancia ?? NaN,
+
+            viviendaDentroRadio:
+                vivienda ? "Sí" : "No",
+
+            metodoVivienda:
+                vivienda?.metodo || "",
+
+            latitudVivienda:
+                vivienda?.latitud ?? NaN,
+
+            longitudVivienda:
+                vivienda?.longitud ?? NaN,
+
+            idOsm:
+                vivienda
+                    ? `${vivienda.tipoElemento}/${vivienda.id}`
+                    : "",
+
+            estadoVivienda,
+            errorVivienda
+        });
+
+        alProgreso?.({
+            procesados: indice + 1,
+            total: registros.length,
+            idSitio: id,
+            etapa: "Sitio completado"
+        });
+
+        if (
+            indice < registros.length - 1 &&
+            !cancelarSolicitado
+        ) {
+            await esperar(1200);
+        }
+    }
+
+    return {
+        resultados: [...resultadosMasivos],
+        errores,
+        cancelado: cancelarSolicitado,
+        totalEsperado: registros.length
+    };
+}
+
+
+export function descargarAnalisisMasivoCsv(
+    resultados
+) {
+    if (!resultados?.length) {
+        throw new Error(
+            "No existen resultados masivos para descargar."
+        );
+    }
+
+    const encabezados = [
+        "ID sitio WOM",
+        "Región",
+        "Comuna",
+        "Proyecto",
+        "Etapa OOEE",
+        "Estado contrato",
+        "Latitud sitio WOM",
+        "Longitud sitio WOM",
+        "Radio PTI (m)",
+        "PTI más cercano",
+        "Distancia PTI (m)",
+        "PTI dentro del radio",
+        "Latitud PTI",
+        "Longitud PTI",
+        "Radio vivienda (m)",
+        "Vivienda/edificio más cercano",
+        "Tipo building OSM",
+        "Distancia vivienda/edificio (m)",
+        "Vivienda/edificio dentro del radio",
+        "Método búsqueda vivienda",
+        "Latitud vivienda/edificio",
+        "Longitud vivienda/edificio",
+        "ID OSM",
+        "Estado análisis vivienda",
+        "Detalle error"
+    ];
+
+    const filas = [encabezados];
+
+    for (const resultado of resultados) {
+        filas.push([
+            resultado.idSitio,
+            resultado.region,
+            resultado.comuna,
+            resultado.proyecto,
+            resultado.etapaOoee,
+            resultado.estadoContrato,
+
+            formatearNumeroChile(
+                resultado.latitudSitio
+            ),
+
+            formatearNumeroChile(
+                resultado.longitudSitio
+            ),
+
+            resultado.radioPti,
+            resultado.nombrePti,
+
+            Number.isFinite(
+                resultado.distanciaPti
+            )
+                ? Math.round(
+                    resultado.distanciaPti
+                )
+                : "",
+
+            resultado.ptiDentroRadio,
+
+            formatearNumeroChile(
+                resultado.latitudPti
+            ),
+
+            formatearNumeroChile(
+                resultado.longitudPti
+            ),
+
+            resultado.radioVivienda,
+            resultado.tipoVivienda,
+            resultado.tipoBuilding,
+
+            Number.isFinite(
+                resultado.distanciaVivienda
+            )
+                ? Math.round(
+                    resultado.distanciaVivienda
+                )
+                : "",
+
+            resultado.viviendaDentroRadio,
+            resultado.metodoVivienda,
+
+            formatearNumeroChile(
+                resultado.latitudVivienda
+            ),
+
+            formatearNumeroChile(
+                resultado.longitudVivienda
+            ),
+
+            resultado.idOsm,
+            resultado.estadoVivienda,
+            resultado.errorVivienda
+        ]);
+    }
+
+    const contenido = filas
+        .map(fila =>
+            fila
+                .map(escaparCsv)
+                .join(";")
+        )
+        .join("\r\n");
+
+    const blob = new Blob(
+        ["\uFEFF", contenido],
+        {
+            type: "text/csv;charset=utf-8;"
+        }
+    );
+
+    const url = URL.createObjectURL(blob);
+    const enlace = document.createElement("a");
+
+    enlace.href = url;
+    enlace.download =
+        `Analisis_completo_WOM_PTI_viviendas_` +
+        `${new Date().toISOString().slice(0, 10)}.csv`;
+
+    document.body.appendChild(enlace);
+    enlace.click();
+    enlace.remove();
+
+    URL.revokeObjectURL(url);
+}
