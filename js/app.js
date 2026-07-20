@@ -27,13 +27,18 @@ import {
   mostrarSinVivienda,
   mostrarErrorVivienda,
   mostrarToast,
-  reiniciarPaneles
+  reiniciarPaneles,
+  actualizarRadiosMasivos,
+  prepararAnalisisMasivo,
+  actualizarProgresoMasivo,
+  finalizarAnalisisMasivo
 } from "./ui.js";
 
 import { actualizarResultadosPti } from "./pti.js";
 import { configurarAutocompletado } from "./buscador.js";
 import { exportarResultadosCsv } from "./exportar.js";
 import { buscarViviendaMasCercana } from "./viviendas.js";
+import {ejecutarAnalisisMasivo,cancelarAnalisisMasivo,obtenerResultadosMasivos,descargarAnalisisMasivoCsv} from "./analisis.js";
 
 const sitiosPorId = {};
 
@@ -41,6 +46,7 @@ let sitioSeleccionado = null;
 let datosPti = [];
 let resultadosActuales = null;
 let consultaViviendaEnCurso = false;
+let analisisMasivoEnCurso = false;
 
 function actualizarUrl(id) {
   const url = new URL(window.location.href);
@@ -135,6 +141,7 @@ function buscarPorId() {
 function actualizarRadio() {
   const radioMetros = Number(elementos.inputRadio.value);
   elementos.valorRadio.textContent = radioMetros;
+  actualizarRadiosMasivos(radioMetros, Number(elementos.inputRadioVivienda.value));
 
   if (!sitioSeleccionado) return;
 
@@ -174,6 +181,7 @@ function cambiarEstadoVivienda() {
 function actualizarRadioVivienda() {
   const radio = Number(elementos.inputRadioVivienda.value);
   elementos.valorRadioVivienda.textContent = radio;
+  actualizarRadiosMasivos(Number(elementos.inputRadio.value), radio);
 
   if (
     elementos.activarVivienda.checked &&
@@ -242,6 +250,10 @@ async function buscarVivienda() {
       !elementos.activarVivienda.checked;
   }
 }
+
+async function iniciarAnalisisMasivo(){if(analisisMasivoEnCurso)return;const cantidad=Object.keys(sitiosPorId).length;if(!cantidad||!datosPti.length){mostrarToast("Aún no se han cargado los sitios o los PTI.","error");return;}if(!window.confirm(`Se analizarán ${cantidad} sitios. La búsqueda de viviendas puede tardar varios minutos. ¿Deseas continuar?`))return;analisisMasivoEnCurso=true;prepararAnalisisMasivo();try{const resultado=await ejecutarAnalisisMasivo({sitiosPorId,datosPti,radioPti:Number(elementos.inputRadio.value),radioVivienda:Number(elementos.inputRadioVivienda.value),alProgreso:actualizarProgresoMasivo});finalizarAnalisisMasivo({total:resultado.resultados.length,errores:resultado.errores,cancelado:resultado.cancelado});mostrarToast(resultado.cancelado?`Análisis cancelado. ${resultado.resultados.length} resultados disponibles.`:`Análisis completo: ${resultado.resultados.length} sitios procesados.`,resultado.cancelado?"error":"exito");}catch(error){console.error(error);finalizarAnalisisMasivo({total:obtenerResultadosMasivos().length,errores:1,cancelado:true});mostrarToast("El análisis se interrumpió. Puedes descargar resultados parciales.","error");}finally{analisisMasivoEnCurso=false;}}
+function cancelarAnalisisActual(){if(!analisisMasivoEnCurso)return;cancelarAnalisisMasivo();elementos.botonCancelarAnalisis.disabled=true;elementos.detalleProgreso.textContent="Cancelación solicitada. Terminando el sitio actual...";}
+function descargarAnalisisCompleto(){try{descargarAnalisisMasivoCsv(obtenerResultadosMasivos());mostrarToast("CSV masivo generado correctamente.");}catch(error){mostrarToast("No hay resultados masivos para descargar.","error");}}
 
 function exportarResultados() {
   if (!sitioSeleccionado || !resultadosActuales) {
@@ -424,8 +436,14 @@ elementos.botonGoogleMaps.addEventListener("click", abrirGoogleMaps);
 elementos.botonCopiarEnlace.addEventListener("click", copiarEnlace);
 elementos.botonExportar.addEventListener("click", exportarResultados);
 
+elementos.botonAnalizarTodos.addEventListener("click", iniciarAnalisisMasivo);
+elementos.botonCancelarAnalisis.addEventListener("click", cancelarAnalisisActual);
+elementos.botonDescargarAnalisis.addEventListener("click", descargarAnalisisCompleto);
+
 elementos.activarVivienda.addEventListener("change", cambiarEstadoVivienda);
 elementos.inputRadioVivienda.addEventListener("input", actualizarRadioVivienda);
 elementos.botonBuscarVivienda.addEventListener("click", buscarVivienda);
+
+actualizarRadiosMasivos(Number(elementos.inputRadio.value),Number(elementos.inputRadioVivienda.value));
 
 iniciarAplicacion();

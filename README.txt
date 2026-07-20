@@ -49,3 +49,12 @@ NOVEDADES v4
 - Botón para abrir el sitio en Google Maps.
 - Notificaciones tipo toast.
 - La búsqueda con Enter sigue disponible.
+
+
+NOVEDADES v5
+------------
+- Análisis masivo de todos los sitios WOM.
+- PTI más cercano y vivienda/edificio cercano.
+- Barra de progreso, cancelación y descarga CSV.
+- Resultados parciales disponibles si se cancela.
+- CSV compatible con Excel en configuración chilena.

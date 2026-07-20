@@ -186,6 +186,28 @@
 
       <hr>
 
+      <section class="seccion-analisis-masivo">
+        <h2>Análisis masivo</h2>
+        <p class="ayuda-corta">Calcula para todos los sitios WOM el PTI más cercano y la vivienda o edificio más cercano dentro del radio configurado.</p>
+        <div class="resumen-radios-masivos">
+          <div><span>Radio PTI</span><strong id="radio-masivo-pti">400 m</strong></div>
+          <div><span>Radio vivienda</span><strong id="radio-masivo-vivienda">300 m</strong></div>
+        </div>
+        <div class="acciones-analisis-masivo">
+          <button id="btn-analizar-todos" class="boton-analisis" type="button">Analizar todos los sitios</button>
+          <button id="btn-cancelar-analisis" class="boton-cancelar" type="button" disabled>Cancelar análisis</button>
+          <button id="btn-descargar-analisis" class="boton-descargar-analisis" type="button" disabled>Descargar CSV completo</button>
+        </div>
+        <div id="panel-progreso" class="panel-progreso oculto">
+          <div class="fila-progreso"><span id="texto-progreso">Preparando análisis...</span><strong id="porcentaje-progreso">0 %</strong></div>
+          <div class="barra-progreso"><div id="relleno-progreso" class="relleno-progreso"></div></div>
+          <p id="detalle-progreso" class="detalle-progreso"></p>
+        </div>
+        <p class="advertencia-masiva">La búsqueda de viviendas usa servidores públicos de OpenStreetMap y puede tardar varios minutos. Mantén esta pestaña abierta.</p>
+      </section>
+
+      <hr>
+
       <section class="acciones-panel">
         <button
           id="btn-volver-sitio"
