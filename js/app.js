@@ -1,449 +1,583 @@
-import {
-  cargarSitios,
-  cargarPti
-} from "./data.js";
+// ======================================================
+// ANÁLISIS MASIVO DE SITIOS WOM
+// ======================================================
 
 import {
-  crearCapaSitios,
-  crearCapaTodosPti,
-  marcarSitioSeleccionado,
-  dibujarCirculo,
-  volverAlSitio,
-  dibujarRadioVivienda,
-  mostrarViviendaEnMapa,
-  limpiarResultadoViviendaMapa,
-  reiniciarMapa
-} from "./mapa.js";
+    calcularDistanciaMetros
+} from "./utilidades.js";
 
 import {
-  elementos,
-  mostrarMensaje,
-  mostrarDetalleSitio,
-  mostrarCargaPti,
-  mostrarPtiCargados,
-  mostrarErrorPti,
-  mostrarCargaVivienda,
-  mostrarResultadoVivienda,
-  mostrarSinVivienda,
-  mostrarErrorVivienda,
-  mostrarToast,
-  reiniciarPaneles,
-  actualizarRadiosMasivos,
-  prepararAnalisisMasivo,
-  actualizarProgresoMasivo,
-  finalizarAnalisisMasivo
-} from "./ui.js";
+    buscarViviendaMasCercana
+} from "./viviendas.js";
 
-import { actualizarResultadosPti } from "./pti.js";
-import { configurarAutocompletado } from "./buscador.js";
-import { exportarResultadosCsv } from "./exportar.js";
-import { buscarViviendaMasCercana } from "./viviendas.js";
-import {ejecutarAnalisisMasivo,cancelarAnalisisMasivo,obtenerResultadosMasivos,descargarAnalisisMasivoCsv} from "./analisis.js";
 
-const sitiosPorId = {};
+let cancelarSolicitado = false;
+let resultadosMasivos = [];
 
-let sitioSeleccionado = null;
-let datosPti = [];
-let resultadosActuales = null;
-let consultaViviendaEnCurso = false;
-let analisisMasivoEnCurso = false;
 
-function actualizarUrl(id) {
-  const url = new URL(window.location.href);
+// ------------------------------------------------------
+// Espera entre consultas
+// ------------------------------------------------------
 
-  if (id) {
-    url.searchParams.set("id", id);
-  } else {
-    url.searchParams.delete("id");
-  }
-
-  window.history.replaceState({}, "", url);
+function esperar(milisegundos) {
+    return new Promise(resolve => {
+        window.setTimeout(
+            resolve,
+            milisegundos
+        );
+    });
 }
 
-function recalcularResultados() {
-  if (!sitioSeleccionado || datosPti.length === 0) {
-    resultadosActuales = null;
-    elementos.botonExportar.disabled = true;
-    return;
-  }
 
-  resultadosActuales = actualizarResultadosPti(
-    sitioSeleccionado,
-    datosPti,
-    Number(elementos.inputRadio.value)
-  );
+// ------------------------------------------------------
+// Formato compatible con Excel Chile
+// ------------------------------------------------------
 
-  elementos.botonExportar.disabled = !resultadosActuales;
-}
+function formatearNumeroChile(
+    valor,
+    decimales = 6
+) {
+    const numero = Number(valor);
 
-function reiniciarViviendaParaNuevoSitio() {
-  limpiarResultadoViviendaMapa(false);
-
-  if (elementos.activarVivienda.checked) {
-    elementos.resultadoVivienda.innerHTML = `
-      <p class="estado-carga">
-        Ajusta el radio y presiona “Buscar vivienda”.
-      </p>
-    `;
-  }
-}
-
-function seleccionarSitio(registroSitio) {
-  sitioSeleccionado = registroSitio;
-
-  const p = registroSitio.feature.properties || {};
-  const coordenadas = registroSitio.layer.getLatLng();
-  const radioMetros = Number(elementos.inputRadio.value);
-  const id = String(p.ID || "").trim().toUpperCase();
-
-  elementos.inputId.value = id;
-
-  mostrarDetalleSitio(p, coordenadas);
-  marcarSitioSeleccionado(registroSitio);
-  dibujarCirculo(coordenadas, radioMetros);
-  recalcularResultados();
-  reiniciarViviendaParaNuevoSitio();
-
-  elementos.botonVolverSitio.disabled = false;
-  elementos.botonCopiarId.disabled = false;
-  elementos.botonGoogleMaps.disabled = false;
-  elementos.botonCopiarEnlace.disabled = false;
-
-  actualizarUrl(id);
-  mostrarMensaje(`Sitio ${id} encontrado.`, "exito");
-}
-
-function buscarPorId() {
-  const consulta = elementos.inputId.value.trim().toUpperCase();
-
-  if (!consulta) {
-    mostrarMensaje(
-      "Escribe un ID, comuna o región para realizar la búsqueda.",
-      "error"
-    );
-    elementos.inputId.focus();
-    return;
-  }
-
-  const registro = sitiosPorId[consulta];
-
-  if (registro) {
-    seleccionarSitio(registro);
-    return;
-  }
-
-  mostrarMensaje(
-    `No existe una coincidencia exacta para ${consulta}. Usa las sugerencias.`,
-    "error"
-  );
-}
-
-function actualizarRadio() {
-  const radioMetros = Number(elementos.inputRadio.value);
-  elementos.valorRadio.textContent = radioMetros;
-  actualizarRadiosMasivos(radioMetros, Number(elementos.inputRadioVivienda.value));
-
-  if (!sitioSeleccionado) return;
-
-  dibujarCirculo(sitioSeleccionado.layer.getLatLng(), radioMetros);
-  recalcularResultados();
-}
-
-function cambiarEstadoVivienda() {
-  const activa = elementos.activarVivienda.checked;
-
-  elementos.controlesVivienda.classList.toggle("deshabilitado", !activa);
-  elementos.inputRadioVivienda.disabled = !activa;
-  elementos.botonBuscarVivienda.disabled = !activa;
-
-  if (!activa) {
-    limpiarResultadoViviendaMapa(true);
-    elementos.resultadoVivienda.innerHTML = `
-      <p class="estado-carga">Activa la opción para realizar la búsqueda.</p>
-    `;
-    return;
-  }
-
-  elementos.resultadoVivienda.innerHTML = `
-    <p class="estado-carga">
-      Selecciona un sitio, ajusta el radio y presiona “Buscar vivienda”.
-    </p>
-  `;
-
-  if (sitioSeleccionado) {
-    dibujarRadioVivienda(
-      sitioSeleccionado.layer.getLatLng(),
-      Number(elementos.inputRadioVivienda.value)
-    );
-  }
-}
-
-function actualizarRadioVivienda() {
-  const radio = Number(elementos.inputRadioVivienda.value);
-  elementos.valorRadioVivienda.textContent = radio;
-  actualizarRadiosMasivos(Number(elementos.inputRadio.value), radio);
-
-  if (
-    elementos.activarVivienda.checked &&
-    sitioSeleccionado
-  ) {
-    dibujarRadioVivienda(
-      sitioSeleccionado.layer.getLatLng(),
-      radio
-    );
-
-    limpiarResultadoViviendaMapa(false);
-
-    elementos.resultadoVivienda.innerHTML = `
-      <p class="estado-carga">
-        Radio modificado. Presiona “Buscar vivienda” para recalcular.
-      </p>
-    `;
-  }
-}
-
-async function buscarVivienda() {
-  if (!elementos.activarVivienda.checked) return;
-
-  if (!sitioSeleccionado) {
-    mostrarErrorVivienda("Primero selecciona un sitio WOM.");
-    return;
-  }
-
-  if (consultaViviendaEnCurso) return;
-
-  const coordenadas = sitioSeleccionado.layer.getLatLng();
-  const radio = Number(elementos.inputRadioVivienda.value);
-
-  consultaViviendaEnCurso = true;
-  elementos.botonBuscarVivienda.disabled = true;
-
-  limpiarResultadoViviendaMapa(false);
-  dibujarRadioVivienda(coordenadas, radio);
-  mostrarCargaVivienda();
-
-  try {
-    const vivienda = await buscarViviendaMasCercana(
-      coordenadas.lat,
-      coordenadas.lng,
-      radio
-    );
-
-    if (!vivienda) {
-      mostrarSinVivienda(radio);
-      return;
+    if (!Number.isFinite(numero)) {
+        return "";
     }
 
-    mostrarResultadoVivienda(vivienda);
-    mostrarViviendaEnMapa(vivienda);
-  } catch (error) {
-    console.error("Error de búsqueda de vivienda:", error);
-
-    const mensaje = error.name === "AbortError"
-      ? "La consulta tardó demasiado. Intenta nuevamente."
-      : "No fue posible consultar OpenStreetMap en este momento.";
-
-    mostrarErrorVivienda(mensaje);
-  } finally {
-    consultaViviendaEnCurso = false;
-    elementos.botonBuscarVivienda.disabled =
-      !elementos.activarVivienda.checked;
-  }
+    return numero
+        .toFixed(decimales)
+        .replace(".", ",");
 }
 
-async function iniciarAnalisisMasivo(){if(analisisMasivoEnCurso)return;const cantidad=Object.keys(sitiosPorId).length;if(!cantidad||!datosPti.length){mostrarToast("Aún no se han cargado los sitios o los PTI.","error");return;}if(!window.confirm(`Se analizarán ${cantidad} sitios. La búsqueda de viviendas puede tardar varios minutos. ¿Deseas continuar?`))return;analisisMasivoEnCurso=true;prepararAnalisisMasivo();try{const resultado=await ejecutarAnalisisMasivo({sitiosPorId,datosPti,radioPti:Number(elementos.inputRadio.value),radioVivienda:Number(elementos.inputRadioVivienda.value),alProgreso:actualizarProgresoMasivo});finalizarAnalisisMasivo({total:resultado.resultados.length,errores:resultado.errores,cancelado:resultado.cancelado});mostrarToast(resultado.cancelado?`Análisis cancelado. ${resultado.resultados.length} resultados disponibles.`:`Análisis completo: ${resultado.resultados.length} sitios procesados.`,resultado.cancelado?"error":"exito");}catch(error){console.error(error);finalizarAnalisisMasivo({total:obtenerResultadosMasivos().length,errores:1,cancelado:true});mostrarToast("El análisis se interrumpió. Puedes descargar resultados parciales.","error");}finally{analisisMasivoEnCurso=false;}}
-function cancelarAnalisisActual(){if(!analisisMasivoEnCurso)return;cancelarAnalisisMasivo();elementos.botonCancelarAnalisis.disabled=true;elementos.detalleProgreso.textContent="Cancelación solicitada. Terminando el sitio actual...";}
-function descargarAnalisisCompleto(){try{descargarAnalisisMasivoCsv(obtenerResultadosMasivos());mostrarToast("CSV masivo generado correctamente.");}catch(error){mostrarToast("No hay resultados masivos para descargar.","error");}}
 
-function exportarResultados() {
-  if (!sitioSeleccionado || !resultadosActuales) {
-    mostrarMensaje("Primero selecciona un sitio.", "error");
-    return;
-  }
+// ------------------------------------------------------
+// Escapar valores CSV
+// ------------------------------------------------------
 
-  try {
-    exportarResultadosCsv({
-      sitio: sitioSeleccionado,
-      radioMetros: Number(elementos.inputRadio.value),
-      ptiMasCercano: resultadosActuales.ptiMasCercano,
-      ptiDentroDelRadio: resultadosActuales.ptiDentroDelRadio
+function escaparCsv(valor) {
+    const texto = String(
+        valor ?? ""
+    );
+
+    return `"${texto.replaceAll('"', '""')}"`;
+}
+
+
+// ------------------------------------------------------
+// Calcular PTI más cercano
+// ------------------------------------------------------
+
+function obtenerPtiMasCercano(
+    coordenadasSitio,
+    datosPti
+) {
+    if (
+        !Array.isArray(datosPti) ||
+        datosPti.length === 0
+    ) {
+        return null;
+    }
+
+    let masCercano = null;
+
+    for (const pti of datosPti) {
+        const distancia =
+            calcularDistanciaMetros(
+                coordenadasSitio.lat,
+                coordenadasSitio.lng,
+                pti.latitud,
+                pti.longitud
+            );
+
+        if (
+            !masCercano ||
+            distancia < masCercano.distancia
+        ) {
+            masCercano = {
+                ...pti,
+                distancia
+            };
+        }
+    }
+
+    return masCercano;
+}
+
+
+// ------------------------------------------------------
+// Buscar vivienda con reintentos
+// ------------------------------------------------------
+
+async function buscarViviendaConReintentos(
+    latitud,
+    longitud,
+    radioMetros,
+    maxIntentos = 2
+) {
+    let ultimoError = null;
+
+    for (
+        let intento = 1;
+        intento <= maxIntentos;
+        intento += 1
+    ) {
+        try {
+            return await buscarViviendaMasCercana(
+                latitud,
+                longitud,
+                radioMetros
+            );
+        } catch (error) {
+            ultimoError = error;
+
+            if (intento < maxIntentos) {
+                await esperar(1800);
+            }
+        }
+    }
+
+    throw ultimoError;
+}
+
+
+// ------------------------------------------------------
+// Cancelar análisis
+// ------------------------------------------------------
+
+export function cancelarAnalisisMasivo() {
+    cancelarSolicitado = true;
+}
+
+
+// ------------------------------------------------------
+// Recuperar resultados
+// ------------------------------------------------------
+
+export function obtenerResultadosMasivos() {
+    return [
+        ...resultadosMasivos
+    ];
+}
+
+
+// ------------------------------------------------------
+// Ejecutar análisis masivo
+// ------------------------------------------------------
+
+export async function ejecutarAnalisisMasivo({
+    sitiosPorId,
+    datosPti,
+    radioPti,
+    radioVivienda,
+    alProgreso
+}) {
+    cancelarSolicitado = false;
+    resultadosMasivos = [];
+
+    const registros =
+        Object.entries(
+            sitiosPorId || {}
+        );
+
+    let errores = 0;
+
+    for (
+        let indice = 0;
+        indice < registros.length;
+        indice += 1
+    ) {
+        if (cancelarSolicitado) {
+            break;
+        }
+
+        const [
+            id,
+            registro
+        ] = registros[indice];
+
+        const propiedades =
+            registro.feature.properties || {};
+
+        const coordenadas =
+            registro.layer.getLatLng();
+
+
+        // ----------------------------------------------
+        // Calcular PTI más cercano
+        // ----------------------------------------------
+
+        alProgreso?.({
+            procesados: indice,
+            total: registros.length,
+            idSitio: id,
+            etapa: "Calculando PTI"
+        });
+
+        const pti =
+            obtenerPtiMasCercano(
+                coordenadas,
+                datosPti
+            );
+
+
+        // ----------------------------------------------
+        // Buscar vivienda o edificio cercano
+        // ----------------------------------------------
+
+        let vivienda = null;
+
+        let estadoVivienda =
+            "Sin edificio dentro del radio";
+
+        let errorVivienda = "";
+
+        alProgreso?.({
+            procesados: indice,
+            total: registros.length,
+            idSitio: id,
+            etapa: "Consultando vivienda"
+        });
+
+        try {
+            vivienda =
+                await buscarViviendaConReintentos(
+                    coordenadas.lat,
+                    coordenadas.lng,
+                    radioVivienda,
+                    2
+                );
+
+            if (vivienda) {
+                estadoVivienda =
+                    vivienda.metodo === "ampliada"
+                        ? "Edificio encontrado con búsqueda ampliada"
+                        : "Vivienda residencial encontrada";
+            }
+        } catch (error) {
+            errores += 1;
+
+            estadoVivienda =
+                "Error de consulta";
+
+            errorVivienda =
+                error?.message ||
+                "Error desconocido";
+        }
+
+
+        // ----------------------------------------------
+        // Guardar resultado
+        // ----------------------------------------------
+
+        resultadosMasivos.push({
+            idSitio: id,
+
+            region:
+                propiedades["Región"] || "",
+
+            comuna:
+                propiedades["Comuna"] || "",
+
+            proyecto:
+                propiedades[
+                    "Proyecto unico Portafolio"
+                ] || "",
+
+            etapaOoee:
+                propiedades["Etapa OOEE"] || "",
+
+            estadoContrato:
+                propiedades[
+                    "Estatus Contrato"
+                ] || "",
+
+            latitudSitio:
+                coordenadas.lat,
+
+            longitudSitio:
+                coordenadas.lng,
+
+
+            // PTI
+            radioPti,
+
+            nombrePti:
+                pti?.nombre || "",
+
+            distanciaPti:
+                pti?.distancia ?? NaN,
+
+            ptiDentroRadio:
+                pti &&
+                pti.distancia <= radioPti
+                    ? "Sí"
+                    : "No",
+
+            latitudPti:
+                pti?.latitud ?? NaN,
+
+            longitudPti:
+                pti?.longitud ?? NaN,
+
+
+            // Vivienda
+            radioVivienda,
+
+            tipoVivienda:
+                vivienda?.tipoVisible || "",
+
+            tipoBuilding:
+                vivienda?.tipoBuilding || "",
+
+            distanciaVivienda:
+                vivienda?.distancia ?? NaN,
+
+            viviendaDentroRadio:
+                vivienda
+                    ? "Sí"
+                    : "No",
+
+            metodoVivienda:
+                vivienda?.metodo || "",
+
+            latitudVivienda:
+                vivienda?.latitud ?? NaN,
+
+            longitudVivienda:
+                vivienda?.longitud ?? NaN,
+
+            idOsm:
+                vivienda
+                    ? (
+                        `${vivienda.tipoElemento}/` +
+                        `${vivienda.id}`
+                    )
+                    : "",
+
+            estadoVivienda,
+
+            errorVivienda
+        });
+
+
+        // ----------------------------------------------
+        // Actualizar progreso
+        // ----------------------------------------------
+
+        alProgreso?.({
+            procesados:
+                indice + 1,
+
+            total:
+                registros.length,
+
+            idSitio:
+                id,
+
+            etapa:
+                "Sitio completado"
+        });
+
+
+        // Pausa para no saturar Overpass.
+        if (
+            indice < registros.length - 1 &&
+            !cancelarSolicitado
+        ) {
+            await esperar(1200);
+        }
+    }
+
+
+    return {
+        resultados: [
+            ...resultadosMasivos
+        ],
+
+        errores,
+
+        cancelado:
+            cancelarSolicitado,
+
+        totalEsperado:
+            registros.length
+    };
+}
+
+
+// ------------------------------------------------------
+// Descargar CSV masivo
+// ------------------------------------------------------
+
+export function descargarAnalisisMasivoCsv(
+    resultados
+) {
+    if (
+        !Array.isArray(resultados) ||
+        resultados.length === 0
+    ) {
+        throw new Error(
+            "No existen resultados masivos para descargar."
+        );
+    }
+
+
+    const encabezados = [
+        "ID sitio WOM",
+        "Región",
+        "Comuna",
+        "Proyecto",
+        "Etapa OOEE",
+        "Estado contrato",
+        "Latitud sitio WOM",
+        "Longitud sitio WOM",
+
+        "Radio PTI (m)",
+        "PTI más cercano",
+        "Distancia PTI (m)",
+        "PTI dentro del radio",
+        "Latitud PTI",
+        "Longitud PTI",
+
+        "Radio vivienda (m)",
+        "Vivienda/edificio más cercano",
+        "Tipo building OSM",
+        "Distancia vivienda/edificio (m)",
+        "Vivienda/edificio dentro del radio",
+        "Método búsqueda vivienda",
+        "Latitud vivienda/edificio",
+        "Longitud vivienda/edificio",
+        "ID OSM",
+        "Estado análisis vivienda",
+        "Detalle error"
+    ];
+
+
+    const filas = [
+        encabezados
+    ];
+
+
+    resultados.forEach(resultado => {
+        filas.push([
+            resultado.idSitio,
+            resultado.region,
+            resultado.comuna,
+            resultado.proyecto,
+            resultado.etapaOoee,
+            resultado.estadoContrato,
+
+            formatearNumeroChile(
+                resultado.latitudSitio
+            ),
+
+            formatearNumeroChile(
+                resultado.longitudSitio
+            ),
+
+            resultado.radioPti,
+
+            resultado.nombrePti,
+
+            Number.isFinite(
+                resultado.distanciaPti
+            )
+                ? Math.round(
+                    resultado.distanciaPti
+                )
+                : "",
+
+            resultado.ptiDentroRadio,
+
+            formatearNumeroChile(
+                resultado.latitudPti
+            ),
+
+            formatearNumeroChile(
+                resultado.longitudPti
+            ),
+
+            resultado.radioVivienda,
+
+            resultado.tipoVivienda,
+
+            resultado.tipoBuilding,
+
+            Number.isFinite(
+                resultado.distanciaVivienda
+            )
+                ? Math.round(
+                    resultado.distanciaVivienda
+                )
+                : "",
+
+            resultado.viviendaDentroRadio,
+
+            resultado.metodoVivienda,
+
+            formatearNumeroChile(
+                resultado.latitudVivienda
+            ),
+
+            formatearNumeroChile(
+                resultado.longitudVivienda
+            ),
+
+            resultado.idOsm,
+
+            resultado.estadoVivienda,
+
+            resultado.errorVivienda
+        ]);
     });
 
-    mostrarMensaje("Archivo CSV generado correctamente.", "exito");
-  } catch (error) {
-    console.error(error);
-    mostrarMensaje("No fue posible exportar los resultados.", "error");
-  }
-}
 
-async function copiarEnlace() {
-  try {
-    await navigator.clipboard.writeText(window.location.href);
-    mostrarToast("Enlace copiado al portapapeles.");
-  } catch {
-    mostrarMensaje(
-      "No fue posible copiar automáticamente. Copia la dirección desde el navegador.",
-      "error"
-    );
-  }
-}
+    const contenido =
+        filas
+            .map(fila =>
+                fila
+                    .map(escaparCsv)
+                    .join(";")
+            )
+            .join("\r\n");
 
 
-async function copiarId() {
-  if (!sitioSeleccionado) {
-    mostrarToast("Primero selecciona un sitio.", "error");
-    return;
-  }
-
-  const id = String(
-    sitioSeleccionado.feature.properties?.ID || ""
-  ).trim();
-
-  try {
-    await navigator.clipboard.writeText(id);
-    mostrarToast(`ID ${id} copiado.`);
-  } catch {
-    mostrarToast("No fue posible copiar el ID.", "error");
-  }
-}
-
-function abrirGoogleMaps() {
-  if (!sitioSeleccionado) {
-    mostrarToast("Primero selecciona un sitio.", "error");
-    return;
-  }
-
-  const coordenadas = sitioSeleccionado.layer.getLatLng();
-  const url = `https://www.google.com/maps?q=${coordenadas.lat},${coordenadas.lng}`;
-
-  window.open(url, "_blank", "noopener,noreferrer");
-}
-
-function reiniciarBusqueda() {
-  sitioSeleccionado = null;
-  resultadosActuales = null;
-  consultaViviendaEnCurso = false;
-
-  elementos.inputId.value = "";
-  elementos.inputRadio.value = "400";
-  elementos.valorRadio.textContent = "400";
-
-  elementos.activarVivienda.checked = false;
-  elementos.inputRadioVivienda.value = "300";
-  elementos.valorRadioVivienda.textContent = "300";
-  elementos.inputRadioVivienda.disabled = true;
-  elementos.botonBuscarVivienda.disabled = true;
-  elementos.controlesVivienda.classList.add("deshabilitado");
-
-  elementos.botonVolverSitio.disabled = true;
-  elementos.botonCopiarId.disabled = true;
-  elementos.botonGoogleMaps.disabled = true;
-  elementos.botonCopiarEnlace.disabled = true;
-  elementos.botonExportar.disabled = true;
-
-  elementos.sugerencias.innerHTML = "";
-  elementos.sugerencias.classList.add("oculto");
-
-  mostrarMensaje(
-    `${Object.keys(sitiosPorId).length} sitios cargados.`,
-    "exito"
-  );
-
-  reiniciarPaneles();
-  reiniciarMapa();
-  actualizarUrl("");
-  elementos.inputId.focus();
-
-  mostrarToast("Búsqueda reiniciada.");
-}
-
-function abrirSitioDesdeUrl() {
-  const parametros = new URLSearchParams(window.location.search);
-  const id = String(parametros.get("id") || "").trim().toUpperCase();
-
-  if (!id) return;
-
-  const registro = sitiosPorId[id];
-
-  if (!registro) {
-    mostrarMensaje(`El ID ${id} de la URL no existe.`, "error");
-    return;
-  }
-
-  seleccionarSitio(registro);
-}
-
-async function iniciarAplicacion() {
-  mostrarCargaPti();
-
-  try {
-    const geojson = await cargarSitios();
-
-    const resultadoSitios = crearCapaSitios(
-      geojson,
-      seleccionarSitio
+    const blob = new Blob(
+        [
+            "\uFEFF",
+            contenido
+        ],
+        {
+            type:
+                "text/csv;charset=utf-8;"
+        }
     );
 
-    Object.assign(sitiosPorId, resultadoSitios.sitiosPorId);
 
-    configurarAutocompletado({
-      input: elementos.inputId,
-      contenedor: elementos.sugerencias,
-      obtenerRegistros: () => sitiosPorId,
-      alSeleccionar: seleccionarSitio,
-      limite: 10
-    });
+    const url =
+        URL.createObjectURL(blob);
 
-    mostrarMensaje(
-      `${Object.keys(sitiosPorId).length} sitios cargados.`,
-      "exito"
-    );
-  } catch (error) {
-    console.error("Error al cargar sitios:", error);
-    mostrarMensaje("No fue posible cargar Sitios.geojson.", "error");
-    return;
-  }
+    const enlace =
+        document.createElement("a");
 
-  try {
-    datosPti = await cargarPti();
-    mostrarPtiCargados(datosPti.length);
-    crearCapaTodosPti(datosPti);
-  } catch (error) {
-    console.error("Error al cargar PTI:", error);
-    mostrarErrorPti(error.message || "No fue posible cargar PTI.csv.");
-  }
 
-  abrirSitioDesdeUrl();
+    const fecha =
+        new Date()
+            .toISOString()
+            .slice(0, 10);
+
+
+    enlace.href = url;
+
+    enlace.download =
+        `Analisis_completo_WOM_` +
+        `PTI_viviendas_${fecha}.csv`;
+
+
+    document.body.appendChild(enlace);
+
+    enlace.click();
+
+    enlace.remove();
+
+    URL.revokeObjectURL(url);
 }
-
-elementos.botonBuscar.addEventListener("click", buscarPorId);
-
-elementos.inputId.addEventListener("keydown", evento => {
-  if (evento.key !== "Enter") return;
-
-  const activa = elementos.sugerencias.querySelector(
-    ".sugerencia-item.activa"
-  );
-
-  if (!activa) buscarPorId();
-});
-
-elementos.inputRadio.addEventListener("input", actualizarRadio);
-elementos.botonVolverSitio.addEventListener("click", volverAlSitio);
-elementos.botonReiniciar.addEventListener("click", reiniciarBusqueda);
-elementos.botonCopiarId.addEventListener("click", copiarId);
-elementos.botonGoogleMaps.addEventListener("click", abrirGoogleMaps);
-elementos.botonCopiarEnlace.addEventListener("click", copiarEnlace);
-elementos.botonExportar.addEventListener("click", exportarResultados);
-
-elementos.botonAnalizarTodos.addEventListener("click", iniciarAnalisisMasivo);
-elementos.botonCancelarAnalisis.addEventListener("click", cancelarAnalisisActual);
-elementos.botonDescargarAnalisis.addEventListener("click", descargarAnalisisCompleto);
-
-elementos.activarVivienda.addEventListener("change", cambiarEstadoVivienda);
-elementos.inputRadioVivienda.addEventListener("input", actualizarRadioVivienda);
-elementos.botonBuscarVivienda.addEventListener("click", buscarVivienda);
-
-actualizarRadiosMasivos(Number(elementos.inputRadio.value),Number(elementos.inputRadioVivienda.value));
-
-iniciarAplicacion();
