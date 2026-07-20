@@ -27,17 +27,7 @@ export const elementos = {
   inputRadioVivienda: document.getElementById("input-radio-vivienda"),
   valorRadioVivienda: document.getElementById("valor-radio-vivienda"),
   botonBuscarVivienda: document.getElementById("btn-buscar-vivienda"),
-  resultadoVivienda: document.getElementById("resultado-vivienda"),
-  radioMasivoPti: document.getElementById("radio-masivo-pti"),
-  radioMasivoVivienda: document.getElementById("radio-masivo-vivienda"),
-  botonAnalizarTodos: document.getElementById("btn-analizar-todos"),
-  botonCancelarAnalisis: document.getElementById("btn-cancelar-analisis"),
-  botonDescargarAnalisis: document.getElementById("btn-descargar-analisis"),
-  panelProgreso: document.getElementById("panel-progreso"),
-  textoProgreso: document.getElementById("texto-progreso"),
-  porcentajeProgreso: document.getElementById("porcentaje-progreso"),
-  rellenoProgreso: document.getElementById("relleno-progreso"),
-  detalleProgreso: document.getElementById("detalle-progreso")
+  resultadoVivienda: document.getElementById("resultado-vivienda")
 };
 
 export function mostrarMensaje(texto, tipo = "") {
@@ -250,9 +240,3 @@ export function reiniciarPaneles() {
     </p>
   `;
 }
-
-
-export function actualizarRadiosMasivos(radioPti,radioVivienda){elementos.radioMasivoPti.textContent=`${radioPti} m`;elementos.radioMasivoVivienda.textContent=`${radioVivienda} m`;}
-export function prepararAnalisisMasivo(){elementos.panelProgreso.classList.remove("oculto");elementos.botonAnalizarTodos.disabled=true;elementos.botonCancelarAnalisis.disabled=false;elementos.botonDescargarAnalisis.disabled=true;elementos.textoProgreso.textContent="Preparando análisis...";elementos.porcentajeProgreso.textContent="0 %";elementos.rellenoProgreso.style.width="0%";elementos.detalleProgreso.textContent="";}
-export function actualizarProgresoMasivo({procesados,total,idSitio,etapa}){const porcentaje=total>0?Math.round(procesados/total*100):0;elementos.textoProgreso.textContent=`${procesados} de ${total} sitios`;elementos.porcentajeProgreso.textContent=`${porcentaje} %`;elementos.rellenoProgreso.style.width=`${porcentaje}%`;elementos.detalleProgreso.textContent=idSitio?`${etapa}: ${idSitio}`:etapa;}
-export function finalizarAnalisisMasivo({total,errores,cancelado}){elementos.botonAnalizarTodos.disabled=false;elementos.botonCancelarAnalisis.disabled=true;elementos.botonDescargarAnalisis.disabled=total===0;elementos.textoProgreso.textContent=cancelado?"Análisis cancelado":"Análisis completado";elementos.detalleProgreso.textContent=`${total} resultados disponibles · ${errores} consultas con error`;if(!cancelado){elementos.porcentajeProgreso.textContent="100 %";elementos.rellenoProgreso.style.width="100%";}}
