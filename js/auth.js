@@ -25,7 +25,7 @@ async function iniciarAplicacionPrincipal() {
   if (aplicacionIniciada) return;
 
   aplicacionIniciada = true;
-  await import("./app.js");
+  await import("./app.js?v=11");
 }
 
 async function mostrarAplicacion() {
